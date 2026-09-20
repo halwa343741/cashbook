@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 import '../../../core/constants/colors.dart';
 import '../../../core/database/local_storage_service.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../book/cubit/book_cubit.dart';
@@ -52,7 +52,8 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   }
 
   void _onQuickAmountTap(int amount) {
-    _amountController.text = NumberFormat('#,###', 'id_ID').format(amount);
+    final localeCode = Localizations.localeOf(context).languageCode;
+    _amountController.text = CurrencyFormatter.formatNumberOnly(amount.toDouble(), localeCode);
   }
 
   Future<void> _pickDate() async {
@@ -68,17 +69,18 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   }
 
   void _saveExpense() {
+    final loc = AppLocalizations.of(context);
     final amount = CurrencyFormatter.parseRupiah(_amountController.text);
     if (amount <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Masukkan nominal pengeluaran yang valid')),
+        SnackBar(content: Text(loc.tr('enter_valid_amount'))),
       );
       return;
     }
 
     if (_selectedBookId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Pilih buku kas terlebih dahulu')),
+        SnackBar(content: Text(loc.tr('select_book'))),
       );
       return;
     }
@@ -122,11 +124,13 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final books = widget.storage.getBooks().where((b) => !b.isReadOnly).toList();
+    final loc = AppLocalizations.of(context);
+    final localeCode = Localizations.localeOf(context).languageCode;
 
     return Scaffold(
       backgroundColor: isDark ? AppColors.darkBackground : AppColors.lightBackground,
       appBar: AppBar(
-        title: const Text('Tambah Pengeluaran'),
+        title: Text(loc.tr('add_expense')),
         centerTitle: true,
       ),
       body: SafeArea(
@@ -137,7 +141,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
             children: [
               // 1. Book Selector
               Text(
-                'Buku Kas',
+                loc.tr('book_name'),
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
@@ -175,7 +179,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
 
               // 2. Nominal Input
               Text(
-                'Nominal Pengeluaran',
+                loc.tr('nominal_expense'),
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
@@ -192,9 +196,9 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                 ),
                 child: Row(
                   children: [
-                    const Text(
-                      'Rp ',
-                      style: TextStyle(
+                    Text(
+                      CurrencyFormatter.getCurrencySymbol(localeCode),
+                      style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
                         color: AppColors.expenseRed,
@@ -229,7 +233,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                     return Padding(
                       padding: const EdgeInsets.only(right: 8.0),
                       child: ActionChip(
-                        label: Text('+${CurrencyFormatter.formatRupiah(amt.toDouble())}'),
+                        label: Text('+${CurrencyFormatter.format(amt.toDouble(), localeCode: localeCode)}'),
                         backgroundColor: isDark ? AppColors.darkSurface : AppColors.gray100,
                         labelStyle: TextStyle(
                           fontSize: 11,
@@ -247,7 +251,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
 
               // 3. Kategori
               Text(
-                'Kategori',
+                loc.tr('category'),
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
@@ -304,7 +308,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
 
               // 4. Tanggal
               Text(
-                'Tanggal Transaksi',
+                loc.tr('transaction_date'),
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
@@ -328,7 +332,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        DateFormatter.formatIndonesian(_selectedDate),
+                        DateFormatter.format(_selectedDate, localeCode),
                         style: TextStyle(
                           fontSize: 14,
                           color: isDark ? Colors.white : AppColors.gray900,
@@ -344,7 +348,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
 
               // 5. Catatan
               Text(
-                'Catatan (Opsional)',
+                loc.tr('notes_optional'),
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
@@ -356,7 +360,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                 controller: _noteController,
                 maxLines: 2,
                 decoration: InputDecoration(
-                  hintText: 'Tulis keterangan pengeluaran...',
+                  hintText: loc.tr('notes_hint_expense'),
                   filled: true,
                   fillColor: isDark ? AppColors.darkSurface : Colors.white,
                   border: OutlineInputBorder(
@@ -384,9 +388,9 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                     ),
                     elevation: 2,
                   ),
-                  child: const Text(
-                    'Simpan Pengeluaran',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  child: Text(
+                    loc.tr('save_transaction'),
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                 ),
               ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/constants/colors.dart';
 import '../../../core/database/local_storage_service.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../book/cubit/book_cubit.dart';
@@ -34,24 +35,22 @@ class _TrashScreenState extends State<TrashScreen> with SingleTickerProviderStat
     super.dispose();
   }
 
-  void _restoreBook(String id) {
+  void _restoreBook(String id, AppLocalizations loc) {
     context.read<BookCubit>().restoreBook(id);
     setState(() {});
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Buku kas berhasil dipulihkan')),
+      SnackBar(content: Text(loc.tr('restore_success'))),
     );
   }
 
-  void _purgeBook(String id) {
+  void _purgeBook(String id, AppLocalizations loc) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Hapus Permanen?'),
-        content: const Text(
-          'Buku kas beserta seluruh transaksinya akan dihapus secara permanen dan tidak dapat dipulihkan kembali.',
-        ),
+        title: Text(loc.tr('delete_permanent')),
+        content: Text(loc.tr('delete_permanent_confirm')),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Batal')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(loc.tr('cancel'))),
           ElevatedButton(
             onPressed: () {
               Navigator.pop(ctx);
@@ -59,31 +58,29 @@ class _TrashScreenState extends State<TrashScreen> with SingleTickerProviderStat
               setState(() {});
             },
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.expenseRed),
-            child: const Text('Hapus Permanen', style: TextStyle(color: Colors.white)),
+            child: Text(loc.tr('delete_permanent'), style: const TextStyle(color: Colors.white)),
           ),
         ],
       ),
     );
   }
 
-  void _restoreTransaction(String id) {
+  void _restoreTransaction(String id, AppLocalizations loc) {
     context.read<TransactionCubit>().restoreTransaction(id);
     setState(() {});
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Transaksi berhasil dipulihkan')),
+      SnackBar(content: Text(loc.tr('restore_success'))),
     );
   }
 
-  void _purgeTransaction(String id) {
+  void _purgeTransaction(String id, AppLocalizations loc) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Hapus Permanen?'),
-        content: const Text(
-          'Transaksi ini akan dihapus secara permanen dari database.',
-        ),
+        title: Text(loc.tr('delete_permanent')),
+        content: Text(loc.tr('delete_permanent_confirm')),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Batal')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(loc.tr('cancel'))),
           ElevatedButton(
             onPressed: () {
               Navigator.pop(ctx);
@@ -91,14 +88,14 @@ class _TrashScreenState extends State<TrashScreen> with SingleTickerProviderStat
               setState(() {});
             },
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.expenseRed),
-            child: const Text('Hapus Permanen', style: TextStyle(color: Colors.white)),
+            child: Text(loc.tr('delete_permanent'), style: const TextStyle(color: Colors.white)),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildDeletedBooks(bool isDark) {
+  Widget _buildDeletedBooks(bool isDark, AppLocalizations loc, String localeCode) {
     final deletedBooks = widget.storage.getDeletedBooks();
 
     if (deletedBooks.isEmpty) {
@@ -110,7 +107,7 @@ class _TrashScreenState extends State<TrashScreen> with SingleTickerProviderStat
                 size: 64, color: isDark ? AppColors.gray600 : AppColors.gray400),
             const SizedBox(height: 12),
             Text(
-              'Sampah buku kas kosong',
+              loc.tr('empty_trash_cashbooks'),
               style: TextStyle(
                 color: isDark ? AppColors.gray400 : AppColors.gray600,
                 fontWeight: FontWeight.w500,
@@ -160,7 +157,7 @@ class _TrashScreenState extends State<TrashScreen> with SingleTickerProviderStat
               const SizedBox(height: 8),
               if (book.deletedAt != null)
                 Text(
-                  'Dihapus pada: ${DateFormatter.formatIndonesian(book.deletedAt!)}',
+                  DateFormatter.formatWithTime(book.deletedAt!, localeCode),
                   style: TextStyle(
                     fontSize: 12,
                     color: isDark ? AppColors.gray400 : AppColors.gray500,
@@ -171,17 +168,17 @@ class _TrashScreenState extends State<TrashScreen> with SingleTickerProviderStat
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   OutlinedButton.icon(
-                    onPressed: () => _purgeBook(book.id),
+                    onPressed: () => _purgeBook(book.id, loc),
                     icon: const Icon(Icons.delete_forever_rounded,
                         size: 16, color: AppColors.expenseRed),
-                    label: const Text('Hapus Permanen',
-                        style: TextStyle(color: AppColors.expenseRed, fontSize: 12)),
+                    label: Text(loc.tr('delete_permanent'),
+                        style: const TextStyle(color: AppColors.expenseRed, fontSize: 12)),
                   ),
                   const SizedBox(width: 8),
                   ElevatedButton.icon(
-                    onPressed: () => _restoreBook(book.id),
+                    onPressed: () => _restoreBook(book.id, loc),
                     icon: const Icon(Icons.restore_rounded, size: 16),
-                    label: const Text('Pulihkan', style: TextStyle(fontSize: 12)),
+                    label: Text(loc.tr('restore'), style: const TextStyle(fontSize: 12)),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary500,
                       foregroundColor: Colors.white,
@@ -196,7 +193,7 @@ class _TrashScreenState extends State<TrashScreen> with SingleTickerProviderStat
     );
   }
 
-  Widget _buildDeletedTransactions(bool isDark) {
+  Widget _buildDeletedTransactions(bool isDark, AppLocalizations loc, String localeCode) {
     final deletedTx = widget.storage.getDeletedTransactions();
 
     if (deletedTx.isEmpty) {
@@ -208,7 +205,7 @@ class _TrashScreenState extends State<TrashScreen> with SingleTickerProviderStat
                 size: 64, color: isDark ? AppColors.gray600 : AppColors.gray400),
             const SizedBox(height: 12),
             Text(
-              'Sampah transaksi kosong',
+              loc.tr('empty_trash_transactions'),
               style: TextStyle(
                 color: isDark ? AppColors.gray400 : AppColors.gray600,
                 fontWeight: FontWeight.w500,
@@ -252,7 +249,12 @@ class _TrashScreenState extends State<TrashScreen> with SingleTickerProviderStat
                     ),
                   ),
                   Text(
-                    '${isIncome ? '+' : '-'} ${CurrencyFormatter.formatRupiah(tx.amount)}',
+                    CurrencyFormatter.format(
+                      tx.amount,
+                      showSign: true,
+                      isExpense: !isIncome,
+                      localeCode: localeCode,
+                    ),
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.bold,
@@ -274,7 +276,7 @@ class _TrashScreenState extends State<TrashScreen> with SingleTickerProviderStat
               const SizedBox(height: 6),
               if (tx.deletedAt != null)
                 Text(
-                  'Dihapus: ${DateFormatter.formatIndonesian(tx.deletedAt!)}',
+                  DateFormatter.formatWithTime(tx.deletedAt!, localeCode),
                   style: TextStyle(
                     fontSize: 12,
                     color: isDark ? AppColors.gray500 : AppColors.gray400,
@@ -285,17 +287,17 @@ class _TrashScreenState extends State<TrashScreen> with SingleTickerProviderStat
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   OutlinedButton.icon(
-                    onPressed: () => _purgeTransaction(tx.id),
+                    onPressed: () => _purgeTransaction(tx.id, loc),
                     icon: const Icon(Icons.delete_forever_rounded,
                         size: 16, color: AppColors.expenseRed),
-                    label: const Text('Hapus Permanen',
-                        style: TextStyle(color: AppColors.expenseRed, fontSize: 12)),
+                    label: Text(loc.tr('delete_permanent'),
+                        style: const TextStyle(color: AppColors.expenseRed, fontSize: 12)),
                   ),
                   const SizedBox(width: 8),
                   ElevatedButton.icon(
-                    onPressed: () => _restoreTransaction(tx.id),
+                    onPressed: () => _restoreTransaction(tx.id, loc),
                     icon: const Icon(Icons.restore_rounded, size: 16),
-                    label: const Text('Pulihkan', style: TextStyle(fontSize: 12)),
+                    label: Text(loc.tr('restore'), style: const TextStyle(fontSize: 12)),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary500,
                       foregroundColor: Colors.white,
@@ -313,27 +315,29 @@ class _TrashScreenState extends State<TrashScreen> with SingleTickerProviderStat
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final loc = AppLocalizations.of(context);
+    final localeCode = Localizations.localeOf(context).languageCode;
 
     return Scaffold(
       backgroundColor: isDark ? AppColors.darkBackground : AppColors.lightBackground,
       appBar: AppBar(
-        title: const Text('Sampah (Trash)'),
+        title: Text(loc.tr('trash_menu')),
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: AppColors.primary500,
           labelColor: AppColors.primary500,
           unselectedLabelColor: isDark ? AppColors.gray400 : AppColors.gray600,
-          tabs: const [
-            Tab(text: 'Buku Kas'),
-            Tab(text: 'Transaksi'),
+          tabs: [
+            Tab(text: loc.tr('tab_cashbooks')),
+            Tab(text: loc.tr('tab_transactions')),
           ],
         ),
       ),
       body: TabBarView(
         controller: _tabController,
         children: [
-          _buildDeletedBooks(isDark),
-          _buildDeletedTransactions(isDark),
+          _buildDeletedBooks(isDark, loc, localeCode),
+          _buildDeletedTransactions(isDark, loc, localeCode),
         ],
       ),
     );

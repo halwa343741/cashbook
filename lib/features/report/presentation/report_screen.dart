@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/constants/colors.dart';
 import '../../../core/database/local_storage_service.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/services/excel_export_service.dart';
 import '../../../core/services/pdf_export_service.dart';
 import '../../../core/utils/currency_formatter.dart';
@@ -103,6 +104,8 @@ class _ReportScreenState extends State<ReportScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final loc = AppLocalizations.of(context);
+    final localeCode = Localizations.localeOf(context).languageCode;
 
     return BlocBuilder<BookCubit, BookState>(
       builder: (context, bookState) {
@@ -128,7 +131,7 @@ class _ReportScreenState extends State<ReportScreen> {
         return Scaffold(
           backgroundColor: isDark ? AppColors.darkBackground : AppColors.lightBackground,
           appBar: AppBar(
-            title: const Text('Laporan Keuangan'),
+            title: Text(loc.tr('financial_report')),
             bottom: const PreferredSize(
               preferredSize: Size.fromHeight(40),
               child: Padding(
@@ -139,13 +142,13 @@ class _ReportScreenState extends State<ReportScreen> {
             actions: [
               IconButton(
                 icon: const Icon(Icons.picture_as_pdf_outlined),
-                tooltip: 'Ekspor PDF',
-                onPressed: () => _exportPdf(transactions, activeBook?.name ?? 'Buku Kas'),
+                tooltip: loc.tr('export_pdf'),
+                onPressed: () => _exportPdf(transactions, activeBook?.name ?? 'Cashbook'),
               ),
               IconButton(
                 icon: const Icon(Icons.table_chart_outlined),
-                tooltip: 'Ekspor Excel',
-                onPressed: () => _exportExcel(transactions, activeBook?.name ?? 'Buku Kas'),
+                tooltip: loc.tr('export_excel'),
+                onPressed: () => _exportExcel(transactions, activeBook?.name ?? 'Cashbook'),
               ),
             ],
           ),
@@ -159,17 +162,17 @@ class _ReportScreenState extends State<ReportScreen> {
                   scrollDirection: Axis.horizontal,
                   child: Row(
                     children: [
-                      _buildPeriodChip('this_month', 'Bulan Ini', isDark),
+                      _buildPeriodChip('this_month', loc.tr('this_month'), isDark),
                       const SizedBox(width: 8),
-                      _buildPeriodChip('last_month', 'Bulan Lalu', isDark),
+                      _buildPeriodChip('last_month', loc.tr('last_month'), isDark),
                       const SizedBox(width: 8),
-                      _buildPeriodChip('this_year', 'Tahun Ini', isDark),
+                      _buildPeriodChip('this_year', loc.tr('this_year'), isDark),
                       const SizedBox(width: 8),
                       ActionChip(
                         avatar: const Icon(Icons.date_range_rounded, size: 16),
                         label: Text(_activeTab == 'custom'
                             ? '${_startDate.day}/${_startDate.month} - ${_endDate.day}/${_endDate.month}'
-                            : 'Kustom'),
+                            : loc.tr('custom_range')),
                         backgroundColor: _activeTab == 'custom'
                             ? AppColors.primary500.withValues(alpha: 0.2)
                             : (isDark ? AppColors.darkSurface : AppColors.gray100),
@@ -209,16 +212,18 @@ class _ReportScreenState extends State<ReportScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           _buildSummaryItem(
-                            'Pemasukan',
+                            loc.tr('cash_in'),
                             totalIncome,
                             AppColors.incomeGreen,
                             Icons.arrow_downward_rounded,
+                            localeCode,
                           ),
                           _buildSummaryItem(
-                            'Pengeluaran',
+                            loc.tr('cash_out'),
                             totalExpense,
                             AppColors.expenseRed,
                             Icons.arrow_upward_rounded,
+                            localeCode,
                           ),
                         ],
                       ),
@@ -227,7 +232,7 @@ class _ReportScreenState extends State<ReportScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            'Selisih / Saldo Bersih',
+                            loc.tr('net_balance'),
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
@@ -235,12 +240,12 @@ class _ReportScreenState extends State<ReportScreen> {
                             ),
                           ),
                           Text(
-                            CurrencyFormatter.formatRupiah(balance),
+                            CurrencyFormatter.format(balance, localeCode: localeCode),
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                               color: balance >= 0
-                                  ? AppColors.incomeGreen
+                                   ? AppColors.incomeGreen
                                   : AppColors.expenseRed,
                             ),
                           ),
@@ -254,7 +259,7 @@ class _ReportScreenState extends State<ReportScreen> {
 
                 // Chart Section
                 Text(
-                  'Perbandingan Arus Kas',
+                  loc.tr('cash_flow_comparison'),
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -270,7 +275,7 @@ class _ReportScreenState extends State<ReportScreen> {
                     borderRadius: BorderRadius.circular(18),
                   ),
                   child: (totalIncome == 0 && totalExpense == 0)
-                      ? const Center(child: Text('Belum ada data untuk grafik'))
+                      ? Center(child: Text(loc.tr('no_report_data')))
                       : BarChart(
                           BarChartData(
                             alignment: BarChartAlignment.spaceAround,
@@ -292,11 +297,11 @@ class _ReportScreenState extends State<ReportScreen> {
                                   getTitlesWidget: (value, meta) {
                                     switch (value.toInt()) {
                                       case 0:
-                                        return const Text('Pemasukan',
-                                            style: TextStyle(fontSize: 12));
+                                        return Text(loc.tr('cash_in'),
+                                            style: const TextStyle(fontSize: 12));
                                       case 1:
-                                        return const Text('Pengeluaran',
-                                            style: TextStyle(fontSize: 12));
+                                        return Text(loc.tr('cash_out'),
+                                            style: const TextStyle(fontSize: 12));
                                       default:
                                         return const Text('');
                                     }
@@ -338,7 +343,7 @@ class _ReportScreenState extends State<ReportScreen> {
 
                 // Expense by Category Breakdown
                 Text(
-                  'Rincian Pengeluaran per Kategori',
+                  loc.tr('expense_by_category'),
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -355,7 +360,7 @@ class _ReportScreenState extends State<ReportScreen> {
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Text(
-                      'Tidak ada pengeluaran pada periode ini',
+                      loc.tr('no_report_data'),
                       style: TextStyle(
                         color: isDark ? AppColors.gray400 : AppColors.gray500,
                       ),
@@ -389,7 +394,7 @@ class _ReportScreenState extends State<ReportScreen> {
                                   style: const TextStyle(fontWeight: FontWeight.w600),
                                 ),
                                 Text(
-                                  CurrencyFormatter.formatRupiah(amt),
+                                  CurrencyFormatter.format(amt, localeCode: localeCode),
                                   style: const TextStyle(
                                     fontWeight: FontWeight.bold,
                                     color: AppColors.expenseRed,
@@ -460,6 +465,7 @@ class _ReportScreenState extends State<ReportScreen> {
     double amount,
     Color color,
     IconData icon,
+    String localeCode,
   ) {
     return Row(
       children: [
@@ -478,7 +484,7 @@ class _ReportScreenState extends State<ReportScreen> {
             Text(title, style: const TextStyle(fontSize: 12, color: AppColors.gray500)),
             const SizedBox(height: 2),
             Text(
-              CurrencyFormatter.formatRupiah(amount),
+              CurrencyFormatter.format(amount, localeCode: localeCode),
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 14,

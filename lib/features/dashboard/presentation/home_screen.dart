@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/colors.dart';
 import '../../../core/database/local_storage_service.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/services/google_drive_service.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../core/utils/date_formatter.dart';
@@ -41,6 +42,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _handleSync() async {
+    final loc = AppLocalizations.of(context);
     setState(() => _isSyncing = true);
     try {
       final success = await widget.driveService.syncWithDrive(widget.storage);
@@ -48,9 +50,7 @@ class _HomeScreenState extends State<HomeScreen> {
         _refreshData();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(success
-                ? 'Data berhasil disinkronkan ke Google Drive!'
-                : 'Sinkronisasi gagal, periksa koneksi internet.'),
+            content: Text(success ? loc.tr('sync_success') : loc.tr('sync_failed')),
             backgroundColor: success ? AppColors.primary500 : AppColors.expenseRed,
           ),
         );
@@ -59,7 +59,7 @@ class _HomeScreenState extends State<HomeScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Sinkronisasi gagal: $e'),
+            content: Text('Sync Error: $e'),
             backgroundColor: AppColors.expenseRed,
           ),
         );
@@ -108,6 +108,8 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final loc = AppLocalizations.of(context);
+    final localeCode = Localizations.localeOf(context).languageCode;
 
     return BlocListener<BookCubit, BookState>(
       listener: (context, state) {
@@ -151,7 +153,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                           const SizedBox(width: 10),
                           Text(
-                            'Cashbook',
+                            loc.tr('app_title'),
                             style: TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
@@ -173,12 +175,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                     child: CircularProgressIndicator(strokeWidth: 2),
                                   )
                                 : const Icon(Icons.cloud_sync_outlined),
-                            tooltip: 'Sinkronkan ke Google Drive',
+                            tooltip: loc.tr('sync_drive'),
                           ),
                           IconButton(
                             onPressed: () => context.push('/trash'),
                             icon: const Icon(Icons.delete_outline_rounded),
-                            tooltip: 'Sampah (Trash)',
+                            tooltip: loc.tr('trash_menu'),
                           ),
                         ],
                       ),
@@ -211,7 +213,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
-                                    'Buku Kas ini telah Ditutup (Closed). Anda tidak dapat menambah transaksi baru kecuali buku dibuka kembali.',
+                                    loc.tr('closed_book_banner'),
                                     style: TextStyle(
                                       fontSize: 12,
                                       color: isDark ? Colors.red[200] : Colors.red[900],
@@ -238,7 +240,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
-                                    'Buku ini bersifat Read-Only (Hanya Baca). Anda tidak dapat menambah atau mengubah transaksi.',
+                                    loc.tr('read_only_banner'),
                                     style: TextStyle(
                                       fontSize: 12,
                                       color: isDark ? Colors.amber[200] : Colors.amber[900],
@@ -294,9 +296,9 @@ class _HomeScreenState extends State<HomeScreen> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                const Text(
-                                  'Total Saldo Kas',
-                                  style: TextStyle(
+                                Text(
+                                  loc.tr('total_balance'),
+                                  style: const TextStyle(
                                     color: Colors.white70,
                                     fontSize: 13,
                                     fontWeight: FontWeight.w500,
@@ -321,8 +323,8 @@ class _HomeScreenState extends State<HomeScreen> {
                             const SizedBox(height: 8),
                             Text(
                               _showBalance
-                                  ? CurrencyFormatter.formatRupiah(balance)
-                                  : 'Rp ••••••••',
+                                  ? CurrencyFormatter.format(balance, localeCode: localeCode)
+                                  : '••••••••',
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 28,
@@ -356,12 +358,13 @@ class _HomeScreenState extends State<HomeScreen> {
                                           child: Column(
                                             crossAxisAlignment: CrossAxisAlignment.start,
                                             children: [
-                                              const Text('Masuk',
-                                                  style: TextStyle(
+                                              Text(loc.tr('cash_in'),
+                                                  style: const TextStyle(
                                                       color: Colors.white70, fontSize: 11)),
                                               Text(
                                                 _showBalance
-                                                    ? CurrencyFormatter.formatRupiah(income)
+                                                    ? CurrencyFormatter.format(income,
+                                                        localeCode: localeCode)
                                                     : '••••',
                                                 overflow: TextOverflow.ellipsis,
                                                 style: const TextStyle(
@@ -399,12 +402,13 @@ class _HomeScreenState extends State<HomeScreen> {
                                           child: Column(
                                             crossAxisAlignment: CrossAxisAlignment.start,
                                             children: [
-                                              const Text('Keluar',
-                                                  style: TextStyle(
+                                              Text(loc.tr('cash_out'),
+                                                  style: const TextStyle(
                                                       color: Colors.white70, fontSize: 11)),
                                               Text(
                                                 _showBalance
-                                                    ? CurrencyFormatter.formatRupiah(expense)
+                                                    ? CurrencyFormatter.format(expense,
+                                                        localeCode: localeCode)
                                                     : '••••',
                                                 overflow: TextOverflow.ellipsis,
                                                 style: const TextStyle(
@@ -443,7 +447,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         children: [
                           Expanded(
                             child: _buildQuickActionButton(
-                              title: 'Pemasukan',
+                              title: loc.tr('add_income'),
                               icon: Icons.add_rounded,
                               bgColor: AppColors.incomeGreen.withValues(alpha: 0.12),
                               iconColor: AppColors.incomeGreen,
@@ -455,7 +459,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: _buildQuickActionButton(
-                              title: 'Pengeluaran',
+                              title: loc.tr('add_expense'),
                               icon: Icons.remove_rounded,
                               bgColor: AppColors.expenseRed.withValues(alpha: 0.12),
                               iconColor: AppColors.expenseRed,
@@ -467,7 +471,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: _buildQuickActionButton(
-                              title: 'Kelola Buku',
+                              title: loc.tr('manage_books'),
                               icon: Icons.menu_book_rounded,
                               bgColor: AppColors.blue500.withValues(alpha: 0.12),
                               iconColor: AppColors.blue500,
@@ -486,7 +490,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'Transaksi Terakhir',
+                        loc.tr('recent_transactions'),
                         style: TextStyle(
                           fontSize: 17,
                           fontWeight: FontWeight.bold,
@@ -495,7 +499,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       TextButton(
                         onPressed: () => context.go('/transactions'),
-                        child: const Text('Lihat Semua'),
+                        child: Text(loc.tr('see_all')),
                       ),
                     ],
                   ),
@@ -529,7 +533,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     color: isDark ? AppColors.gray600 : AppColors.gray300),
                                 const SizedBox(height: 12),
                                 Text(
-                                  'Belum ada transaksi di buku ini',
+                                  loc.tr('no_transactions'),
                                   style: TextStyle(
                                     fontWeight: FontWeight.w600,
                                     color: isDark ? AppColors.gray300 : AppColors.gray700,
@@ -537,7 +541,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  'Tekan Pemasukan atau Pengeluaran untuk mencatat transaksi',
+                                  loc.tr('no_transactions_sub'),
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
                                     fontSize: 12,
@@ -557,7 +561,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           separatorBuilder: (_, __) => const SizedBox(height: 10),
                           itemBuilder: (context, index) {
                             final tx = recent[index];
-                            return _buildTransactionTile(context, tx, isDark);
+                            return _buildTransactionTile(context, tx, isDark, localeCode);
                           },
                         );
                       }
@@ -576,12 +580,11 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _showLockedToast({bool isClosed = false}) {
+    final loc = AppLocalizations.of(context);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          isClosed
-              ? 'Buku ini telah Ditutup. Buka kembali buku untuk mencatat transaksi baru.'
-              : 'Buku ini Read-Only. Tidak dapat menambah transaksi.',
+          isClosed ? loc.tr('closed_book_banner') : loc.tr('read_only_banner'),
         ),
         backgroundColor: isClosed ? AppColors.expenseRed : AppColors.amber500,
       ),
@@ -642,7 +645,8 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildTransactionTile(BuildContext context, TransactionModel tx, bool isDark) {
+  Widget _buildTransactionTile(
+      BuildContext context, TransactionModel tx, bool isDark, String localeCode) {
     final isIncome = tx.isIncome;
     final color = isIncome ? AppColors.incomeGreen : AppColors.expenseRed;
 
@@ -690,7 +694,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   Text(
                     tx.note.isNotEmpty
                         ? tx.note
-                        : DateFormatter.formatIndonesian(tx.transactionDate),
+                        : DateFormatter.format(tx.transactionDate, localeCode),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -702,7 +706,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             Text(
-              '${isIncome ? '+' : '-'} ${CurrencyFormatter.formatRupiah(tx.amount)}',
+              '${isIncome ? '+' : '-'} ${CurrencyFormatter.format(tx.amount, localeCode: localeCode)}',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 14,

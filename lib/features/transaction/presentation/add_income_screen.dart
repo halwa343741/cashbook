@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 import '../../../core/constants/colors.dart';
 import '../../../core/database/local_storage_service.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../book/cubit/book_cubit.dart';
@@ -52,7 +52,8 @@ class _AddIncomeScreenState extends State<AddIncomeScreen> {
   }
 
   void _onQuickAmountTap(int amount) {
-    _amountController.text = NumberFormat('#,###', 'id_ID').format(amount);
+    final localeCode = Localizations.localeOf(context).languageCode;
+    _amountController.text = CurrencyFormatter.formatNumberOnly(amount.toDouble(), localeCode);
   }
 
   Future<void> _pickDate() async {
@@ -68,17 +69,18 @@ class _AddIncomeScreenState extends State<AddIncomeScreen> {
   }
 
   void _saveIncome() {
+    final loc = AppLocalizations.of(context);
     final amount = CurrencyFormatter.parseRupiah(_amountController.text);
     if (amount <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Masukkan nominal pemasukan yang valid')),
+        SnackBar(content: Text(loc.tr('enter_valid_amount'))),
       );
       return;
     }
 
     if (_selectedBookId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Pilih buku kas terlebih dahulu')),
+        SnackBar(content: Text(loc.tr('select_book'))),
       );
       return;
     }
@@ -119,11 +121,13 @@ class _AddIncomeScreenState extends State<AddIncomeScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final books = widget.storage.getBooks().where((b) => !b.isReadOnly).toList();
+    final loc = AppLocalizations.of(context);
+    final localeCode = Localizations.localeOf(context).languageCode;
 
     return Scaffold(
       backgroundColor: isDark ? AppColors.darkBackground : AppColors.lightBackground,
       appBar: AppBar(
-        title: const Text('Tambah Pemasukan'),
+        title: Text(loc.tr('add_income')),
         centerTitle: true,
       ),
       body: SafeArea(
@@ -134,7 +138,7 @@ class _AddIncomeScreenState extends State<AddIncomeScreen> {
             children: [
               // 1. Book Selector
               Text(
-                'Buku Kas',
+                loc.tr('book_name'),
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
@@ -172,7 +176,7 @@ class _AddIncomeScreenState extends State<AddIncomeScreen> {
 
               // 2. Nominal Input
               Text(
-                'Nominal Pemasukan',
+                loc.tr('nominal_income'),
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
@@ -189,9 +193,9 @@ class _AddIncomeScreenState extends State<AddIncomeScreen> {
                 ),
                 child: Row(
                   children: [
-                    const Text(
-                      'Rp ',
-                      style: TextStyle(
+                    Text(
+                      CurrencyFormatter.getCurrencySymbol(localeCode),
+                      style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
                         color: AppColors.incomeGreen,
@@ -226,7 +230,7 @@ class _AddIncomeScreenState extends State<AddIncomeScreen> {
                     return Padding(
                       padding: const EdgeInsets.only(right: 8.0),
                       child: ActionChip(
-                        label: Text('+${CurrencyFormatter.formatRupiah(amt.toDouble())}'),
+                        label: Text('+${CurrencyFormatter.format(amt.toDouble(), localeCode: localeCode)}'),
                         backgroundColor: isDark ? AppColors.darkSurface : AppColors.gray100,
                         labelStyle: TextStyle(
                           fontSize: 11,
@@ -244,7 +248,7 @@ class _AddIncomeScreenState extends State<AddIncomeScreen> {
 
               // 3. Kategori
               Text(
-                'Kategori',
+                loc.tr('category'),
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
@@ -301,7 +305,7 @@ class _AddIncomeScreenState extends State<AddIncomeScreen> {
 
               // 4. Tanggal
               Text(
-                'Tanggal Transaksi',
+                loc.tr('transaction_date'),
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
@@ -325,7 +329,7 @@ class _AddIncomeScreenState extends State<AddIncomeScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        DateFormatter.formatIndonesian(_selectedDate),
+                        DateFormatter.format(_selectedDate, localeCode),
                         style: TextStyle(
                           fontSize: 14,
                           color: isDark ? Colors.white : AppColors.gray900,
@@ -341,7 +345,7 @@ class _AddIncomeScreenState extends State<AddIncomeScreen> {
 
               // 5. Catatan
               Text(
-                'Catatan (Opsional)',
+                loc.tr('notes_optional'),
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
@@ -353,7 +357,7 @@ class _AddIncomeScreenState extends State<AddIncomeScreen> {
                 controller: _noteController,
                 maxLines: 2,
                 decoration: InputDecoration(
-                  hintText: 'Tulis keterangan pemasukan...',
+                  hintText: loc.tr('notes_hint_income'),
                   filled: true,
                   fillColor: isDark ? AppColors.darkSurface : Colors.white,
                   border: OutlineInputBorder(
@@ -381,9 +385,9 @@ class _AddIncomeScreenState extends State<AddIncomeScreen> {
                     ),
                     elevation: 2,
                   ),
-                  child: const Text(
-                    'Simpan Pemasukan',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  child: Text(
+                    loc.tr('save_transaction'),
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                 ),
               ),

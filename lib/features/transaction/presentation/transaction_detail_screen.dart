@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/colors.dart';
 import '../../../core/database/local_storage_service.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../book/cubit/book_cubit.dart';
@@ -21,12 +22,14 @@ class TransactionDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final loc = AppLocalizations.of(context);
+    final localeCode = Localizations.localeOf(context).languageCode;
     final tx = storage.getTransactionById(transactionId);
 
     if (tx == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Detail Transaksi')),
-        body: const Center(child: Text('Transaksi tidak ditemukan')),
+        appBar: AppBar(title: Text(loc.tr('detail_transaction'))),
+        body: Center(child: Text(loc.tr('no_transactions_found'))),
       );
     }
 
@@ -39,14 +42,14 @@ class TransactionDetailScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: isDark ? AppColors.darkBackground : AppColors.lightBackground,
       appBar: AppBar(
-        title: const Text('Detail Transaksi'),
+        title: Text(loc.tr('detail_transaction')),
         actions: [
           if (!isReadOnly)
             IconButton(
               icon: const Icon(Icons.delete_outline_rounded, color: AppColors.expenseRed),
-              tooltip: 'Hapus ke Sampah',
+              tooltip: loc.tr('delete_to_trash'),
               onPressed: () {
-                _confirmDelete(context);
+                _confirmDelete(context, loc);
               },
             ),
         ],
@@ -79,7 +82,7 @@ class TransactionDetailScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      isIncome ? 'Pemasukan' : 'Pengeluaran',
+                      isIncome ? loc.tr('cash_in') : loc.tr('cash_out'),
                       style: TextStyle(
                         color: color,
                         fontWeight: FontWeight.bold,
@@ -89,7 +92,12 @@ class TransactionDetailScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    '${isIncome ? '+' : '-'} ${CurrencyFormatter.formatRupiah(tx.amount)}',
+                    CurrencyFormatter.format(
+                      tx.amount,
+                      showSign: true,
+                      isExpense: !isIncome,
+                      localeCode: localeCode,
+                    ),
                     style: TextStyle(
                       fontSize: 30,
                       fontWeight: FontWeight.bold,
@@ -98,7 +106,7 @@ class TransactionDetailScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    DateFormatter.formatIndonesian(tx.transactionDate),
+                    DateFormatter.format(tx.transactionDate, localeCode),
                     style: TextStyle(
                       color: isDark ? AppColors.gray400 : AppColors.gray500,
                       fontSize: 14,
@@ -122,7 +130,7 @@ class TransactionDetailScreen extends StatelessWidget {
                   _buildDetailRow(
                     context: context,
                     icon: Icons.category_outlined,
-                    label: 'Kategori',
+                    label: loc.tr('category'),
                     value: tx.categoryName,
                     isDark: isDark,
                   ),
@@ -130,7 +138,7 @@ class TransactionDetailScreen extends StatelessWidget {
                   _buildDetailRow(
                     context: context,
                     icon: Icons.notes_rounded,
-                    label: 'Catatan',
+                    label: loc.tr('notes'),
                     value: tx.note.isNotEmpty ? tx.note : '-',
                     isDark: isDark,
                   ),
@@ -138,9 +146,8 @@ class TransactionDetailScreen extends StatelessWidget {
                   _buildDetailRow(
                     context: context,
                     icon: Icons.calendar_today_outlined,
-                    label: 'Waktu Pencatatan',
-                    value:
-                        '${tx.createdAt.day}/${tx.createdAt.month}/${tx.createdAt.year} ${tx.createdAt.hour.toString().padLeft(2, '0')}:${tx.createdAt.minute.toString().padLeft(2, '0')}',
+                    label: loc.tr('transaction_date'),
+                    value: DateFormatter.formatWithTime(tx.createdAt, localeCode),
                     isDark: isDark,
                   ),
                 ],
@@ -152,18 +159,16 @@ class TransactionDetailScreen extends StatelessWidget {
     );
   }
 
-  void _confirmDelete(BuildContext context) {
+  void _confirmDelete(BuildContext context, AppLocalizations loc) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Hapus Transaksi?'),
-        content: const Text(
-          'Transaksi ini akan dipindahkan ke Sampah (Trash) dan dapat dipulihkan kapan saja.',
-        ),
+        title: Text(loc.tr('delete_to_trash')),
+        content: Text(loc.tr('delete_confirm_desc')),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Batal'),
+            child: Text(loc.tr('cancel')),
           ),
           ElevatedButton(
             onPressed: () {
@@ -172,7 +177,7 @@ class TransactionDetailScreen extends StatelessWidget {
               context.pop();
             },
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.expenseRed),
-            child: const Text('Pindahkan ke Sampah', style: TextStyle(color: Colors.white)),
+            child: Text(loc.tr('delete_to_trash'), style: const TextStyle(color: Colors.white)),
           ),
         ],
       ),

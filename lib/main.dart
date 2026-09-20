@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'app/routes/app_router.dart';
 import 'core/database/local_storage_service.dart';
@@ -77,9 +78,14 @@ class CashbookApp extends StatelessWidget {
               Locale('id'),
               Locale('en'),
               Locale('es'),
+              Locale('zh'),
+              Locale('ar'),
             ],
             localizationsDelegates: const [
               AppLocalizationsDelegate(),
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
             ],
             routerConfig: router,
           );

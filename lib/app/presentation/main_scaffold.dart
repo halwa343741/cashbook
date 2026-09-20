@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/constants/colors.dart';
+import '../../core/localization/app_localizations.dart';
 
 class MainScaffold extends StatelessWidget {
   final StatefulNavigationShell navigationShell;
@@ -20,6 +21,7 @@ class MainScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final loc = AppLocalizations.of(context);
 
     return Scaffold(
       body: navigationShell,
@@ -51,26 +53,26 @@ class MainScaffold extends StatelessWidget {
           selectedFontSize: 12,
           unselectedFontSize: 12,
           selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600),
-          items: const [
+          items: [
             BottomNavigationBarItem(
-              icon: Icon(Icons.home_outlined),
-              activeIcon: Icon(Icons.home_rounded),
-              label: 'Beranda',
+              icon: const Icon(Icons.home_outlined),
+              activeIcon: const Icon(Icons.home_rounded),
+              label: loc.tr('nav_home'),
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.receipt_long_outlined),
-              activeIcon: Icon(Icons.receipt_long_rounded),
-              label: 'Transaksi',
+              icon: const Icon(Icons.receipt_long_outlined),
+              activeIcon: const Icon(Icons.receipt_long_rounded),
+              label: loc.tr('nav_transactions'),
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.pie_chart_outline_rounded),
-              activeIcon: Icon(Icons.pie_chart_rounded),
-              label: 'Laporan',
+              icon: const Icon(Icons.pie_chart_outline_rounded),
+              activeIcon: const Icon(Icons.pie_chart_rounded),
+              label: loc.tr('nav_report'),
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline_rounded),
-              activeIcon: Icon(Icons.person_rounded),
-              label: 'Akun',
+              icon: const Icon(Icons.person_outline_rounded),
+              activeIcon: const Icon(Icons.person_rounded),
+              label: loc.tr('nav_account'),
             ),
           ],
         ),

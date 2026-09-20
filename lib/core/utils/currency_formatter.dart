@@ -19,6 +19,18 @@ class CurrencyFormatter {
     decimalDigits: 0,
   );
 
+  static final NumberFormat _formatterZh = NumberFormat.currency(
+    locale: 'zh_CN',
+    symbol: '¥ ',
+    decimalDigits: 0,
+  );
+
+  static final NumberFormat _formatterAr = NumberFormat.currency(
+    locale: 'ar_SA',
+    symbol: 'ر.س ',
+    decimalDigits: 0,
+  );
+
   static String format(
     double amount, {
     bool showSign = false,
@@ -30,6 +42,10 @@ class CurrencyFormatter {
       formatter = _formatterEn;
     } else if (localeCode == 'es') {
       formatter = _formatterEs;
+    } else if (localeCode == 'zh') {
+      formatter = _formatterZh;
+    } else if (localeCode == 'ar') {
+      formatter = _formatterAr;
     } else {
       formatter = _formatterId;
     }
@@ -49,7 +65,23 @@ class CurrencyFormatter {
       format(amount, localeCode: localeCode);
 
   static String formatNumberOnly(double amount, [String localeCode = 'id']) {
-    final locale = localeCode == 'en' ? 'en_US' : (localeCode == 'es' ? 'es_ES' : 'id_ID');
+    String locale;
+    switch (localeCode) {
+      case 'en':
+        locale = 'en_US';
+        break;
+      case 'es':
+        locale = 'es_ES';
+        break;
+      case 'zh':
+        locale = 'zh_CN';
+        break;
+      case 'ar':
+        locale = 'ar_SA';
+        break;
+      default:
+        locale = 'id_ID';
+    }
     return NumberFormat('#,###', locale).format(amount.abs());
   }
 
@@ -59,4 +91,19 @@ class CurrencyFormatter {
   }
 
   static double parseRupiah(String text) => parse(text);
+
+  static String getCurrencySymbol([String localeCode = 'id']) {
+    switch (localeCode) {
+      case 'en':
+        return '\$ ';
+      case 'es':
+        return '€ ';
+      case 'zh':
+        return '¥ ';
+      case 'ar':
+        return 'ر.س ';
+      default:
+        return 'Rp ';
+    }
+  }
 }

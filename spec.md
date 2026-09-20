@@ -244,18 +244,25 @@ Pengguna memilih menu *"Bagikan Buku Kas"* di Screen 10:
    * 🇮🇩 **Bahasa Indonesia (`id`)**: Bahasa default aplikasi.
    * 🇺🇸 **English (`en`)**: Bahasa internasional.
    * 🇪🇸 **Español (`es`)**: Bahasa Spanyol.
+   * 🇨🇳 **简体中文 (`zh`)**: Bahasa Mandarin (Chinese Simplified).
+   * 🇸🇦 **العربية (`ar`)**: Bahasa Arab dengan dukungan native Directionality RTL (Right-to-Left).
 2. **Format Angka & Mata Uang Dinamis**:
    * Menyesuaikan secara otomatis berdasarkan bahasa/locale yang dipilih pengguna:
      * `id`: Format Rupiah `Rp 1.500.000` (titik sebagai pemisah ribuan).
      * `en`: Format Dollar `$ 1,500,000` (koma sebagai pemisah ribuan).
      * `es`: Format Euro `1.500.000 €`.
+     * `zh`: Format Yuan `¥ 1,500,000`.
+     * `ar`: Format Riyal `ر.س 1,500,000` / `1,500,000 ر.س`.
 3. **Format Tanggal & Waktu Dinamis**:
    * Menyesuaikan standar lokal masing-masing negara:
      * `id`: `20 Sep 2026, 14:30` (format 24 jam).
      * `en`: `Sep 20, 2026, 02:30 PM` (format 12 jam dengan AM/PM).
      * `es`: `20 sep 2026, 14:30`.
+     * `zh`: `2026年9月20日 14:30`.
+     * `ar`: `20 سبتمبر 2026، 02:30 م` (format AM/PM dalam teks Arab).
 4. **Penyimpanan Preferensi Bahasa**:
-   * Bahasa pilihan disimpan di `SharedPreferences` (`app_locale`) dan dapat diubah secara instan di menu Pengaturan Akun tanpa perlu me-restart aplikasi.
+   * Bahasa pilihan disimpan di `SharedPreferences` (`app_language_code`) dan dapat diubah secara instan di menu Pengaturan Akun tanpa perlu me-restart aplikasi.
+   * Perubahan bahasa langsung merefleksikan seluruh teks UI (Beranda, Riwayat, Laporan, Tong Sampah, Manajemen Buku, Kelola Kategori, Pengaturan Akun).
 
 ---
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/colors.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../book/cubit/book_cubit.dart';
@@ -66,11 +67,13 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final loc = AppLocalizations.of(context);
+    final localeCode = Localizations.localeOf(context).languageCode;
 
     return Scaffold(
       backgroundColor: isDark ? AppColors.darkBackground : AppColors.lightBackground,
       appBar: AppBar(
-        title: const Text('Riwayat Transaksi'),
+        title: Text(loc.tr('history_transactions')),
         bottom: const PreferredSize(
           preferredSize: Size.fromHeight(40),
           child: Padding(
@@ -91,7 +94,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                   controller: _searchController,
                   onChanged: (val) => setState(() => _searchQuery = val.toLowerCase()),
                   decoration: InputDecoration(
-                    hintText: 'Cari catatan atau kategori...',
+                    hintText: loc.tr('search_placeholder'),
                     prefixIcon: const Icon(Icons.search_rounded),
                     suffixIcon: _searchQuery.isNotEmpty
                         ? IconButton(
@@ -117,11 +120,11 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                 // Filter Tabs
                 Row(
                   children: [
-                    _buildFilterChip('all', 'Semua', isDark),
+                    _buildFilterChip('all', loc.tr('all'), isDark),
                     const SizedBox(width: 8),
-                    _buildFilterChip('income', 'Pemasukan', isDark, AppColors.incomeGreen),
+                    _buildFilterChip('income', loc.tr('cash_in'), isDark, AppColors.incomeGreen),
                     const SizedBox(width: 8),
-                    _buildFilterChip('expense', 'Pengeluaran', isDark, AppColors.expenseRed),
+                    _buildFilterChip('expense', loc.tr('cash_out'), isDark, AppColors.expenseRed),
                   ],
                 ),
               ],
@@ -162,7 +165,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                               color: isDark ? AppColors.gray600 : AppColors.gray400),
                           const SizedBox(height: 12),
                           Text(
-                            'Tidak ada transaksi ditemukan',
+                            loc.tr('no_transactions_found'),
                             style: TextStyle(
                               color: isDark ? AppColors.gray400 : AppColors.gray600,
                               fontWeight: FontWeight.w500,
@@ -176,7 +179,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                   // Group by formatted date
                   final Map<String, List<TransactionModel>> grouped = {};
                   for (final tx in list) {
-                    final key = DateFormatter.formatIndonesian(tx.transactionDate);
+                    final key = DateFormatter.formatGroupHeader(tx.transactionDate, localeCode);
                     grouped.putIfAbsent(key, () => []).add(tx);
                   }
 
@@ -201,7 +204,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                               ),
                             ),
                           ),
-                          ...txList.map((tx) => _buildTransactionCard(context, tx, isDark)),
+                          ...txList.map((tx) => _buildTransactionCard(context, tx, isDark, localeCode)),
                         ],
                       );
                     },
@@ -221,18 +224,18 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
 
           return FloatingActionButton.extended(
             onPressed: () {
-              _showAddOptions(context);
+              _showAddOptions(context, loc);
             },
             backgroundColor: AppColors.primary500,
             icon: const Icon(Icons.add_rounded, color: Colors.white),
-            label: const Text('Catat', style: TextStyle(color: Colors.white)),
+            label: Text(loc.tr('save'), style: const TextStyle(color: Colors.white)),
           );
         },
       ),
     );
   }
 
-  void _showAddOptions(BuildContext context) {
+  void _showAddOptions(BuildContext context, AppLocalizations loc) {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -254,9 +257,8 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                     ),
                     child: const Icon(Icons.arrow_downward_rounded, color: AppColors.incomeGreen),
                   ),
-                  title: const Text('Tambah Pemasukan',
-                      style: TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: const Text('Gaji, penjualan, dividen, dll'),
+                  title: Text(loc.tr('add_income'),
+                      style: const TextStyle(fontWeight: FontWeight.bold)),
                   onTap: () {
                     Navigator.pop(ctx);
                     context.push('/add-income');
@@ -272,9 +274,8 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                     ),
                     child: const Icon(Icons.arrow_upward_rounded, color: AppColors.expenseRed),
                   ),
-                  title: const Text('Tambah Pengeluaran',
-                      style: TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: const Text('Makan, tagihan, transportasi, belanja'),
+                  title: Text(loc.tr('add_expense'),
+                      style: const TextStyle(fontWeight: FontWeight.bold)),
                   onTap: () {
                     Navigator.pop(ctx);
                     context.push('/add-expense');
@@ -307,7 +308,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
     );
   }
 
-  Widget _buildTransactionCard(BuildContext context, TransactionModel tx, bool isDark) {
+  Widget _buildTransactionCard(BuildContext context, TransactionModel tx, bool isDark, String localeCode) {
     final isIncome = tx.isIncome;
     final color = isIncome ? AppColors.incomeGreen : AppColors.expenseRed;
 
@@ -350,7 +351,12 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
               )
             : null,
         trailing: Text(
-          '${isIncome ? '+' : '-'} ${CurrencyFormatter.formatRupiah(tx.amount)}',
+          CurrencyFormatter.format(
+            tx.amount,
+            showSign: true,
+            isExpense: !isIncome,
+            localeCode: localeCode,
+          ),
           style: TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 14,

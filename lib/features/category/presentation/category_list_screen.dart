@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import '../../../core/constants/colors.dart';
 import '../../../core/database/local_storage_service.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../domain/models/category_model.dart';
 
 class CategoryListScreen extends StatefulWidget {
@@ -59,6 +60,8 @@ class _CategoryListScreenState extends State<CategoryListScreen>
       '#8B5CF6',
     ];
 
+    final loc = AppLocalizations.of(context);
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -81,7 +84,7 @@ class _CategoryListScreenState extends State<CategoryListScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Tambah Kategori ${type == 'income' ? 'Pemasukan' : 'Pengeluaran'}',
+                    '${loc.tr('add_category')} (${type == 'income' ? loc.tr('cash_in') : loc.tr('cash_out')})',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -92,7 +95,7 @@ class _CategoryListScreenState extends State<CategoryListScreen>
                   TextField(
                     controller: nameController,
                     decoration: InputDecoration(
-                      hintText: 'Nama Kategori',
+                      hintText: loc.tr('category_name'),
                       filled: true,
                       fillColor: isDark ? AppColors.darkBackground : AppColors.gray50,
                       border: OutlineInputBorder(
@@ -102,7 +105,7 @@ class _CategoryListScreenState extends State<CategoryListScreen>
                     ),
                   ),
                   const SizedBox(height: 16),
-                  const Text('Pilih Ikon:', style: TextStyle(fontWeight: FontWeight.w600)),
+                  Text('${loc.tr('select_icon')}:', style: const TextStyle(fontWeight: FontWeight.w600)),
                   const SizedBox(height: 8),
                   Wrap(
                     spacing: 12,
@@ -131,7 +134,7 @@ class _CategoryListScreenState extends State<CategoryListScreen>
                     }).toList(),
                   ),
                   const SizedBox(height: 16),
-                  const Text('Pilih Warna:', style: TextStyle(fontWeight: FontWeight.w600)),
+                  Text('${loc.tr('select_color')}:', style: const TextStyle(fontWeight: FontWeight.w600)),
                   const SizedBox(height: 8),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -182,7 +185,7 @@ class _CategoryListScreenState extends State<CategoryListScreen>
                         backgroundColor: AppColors.primary500,
                         foregroundColor: Colors.white,
                       ),
-                      child: const Text('Simpan Kategori'),
+                      child: Text(loc.tr('save')),
                     ),
                   ),
                 ],
@@ -278,19 +281,20 @@ class _CategoryListScreenState extends State<CategoryListScreen>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final loc = AppLocalizations.of(context);
 
     return Scaffold(
       backgroundColor: isDark ? AppColors.darkBackground : AppColors.lightBackground,
       appBar: AppBar(
-        title: const Text('Kelola Kategori'),
+        title: Text(loc.tr('manage_categories')),
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: AppColors.primary500,
           labelColor: AppColors.primary500,
           unselectedLabelColor: isDark ? AppColors.gray400 : AppColors.gray600,
-          tabs: const [
-            Tab(text: 'Pemasukan'),
-            Tab(text: 'Pengeluaran'),
+          tabs: [
+            Tab(text: loc.tr('cash_in')),
+            Tab(text: loc.tr('cash_out')),
           ],
         ),
       ),

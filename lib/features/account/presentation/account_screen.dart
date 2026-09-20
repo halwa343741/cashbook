@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/colors.dart';
 import '../../../core/database/local_storage_service.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/services/biometric_service.dart';
 import '../../../core/services/google_drive_service.dart';
 import '../../../core/services/share_service.dart';
@@ -170,11 +171,12 @@ class _AccountScreenState extends State<AccountScreen> {
   void _showLanguageDialog() {
     final currentLocale = context.read<LocaleCubit>().state.languageCode;
     final cubit = context.read<LocaleCubit>();
+    final loc = AppLocalizations.of(context);
 
     showDialog(
       context: context,
       builder: (ctx) => SimpleDialog(
-        title: const Text('Pilih Bahasa / Language'),
+        title: Text(loc.tr('select_language')),
         children: [
           ListTile(
             leading: const Text('🇮🇩', style: TextStyle(fontSize: 24)),
@@ -206,6 +208,28 @@ class _AccountScreenState extends State<AccountScreen> {
                 : null,
             onTap: () {
               cubit.setLocale('es');
+              Navigator.pop(ctx);
+            },
+          ),
+          ListTile(
+            leading: const Text('🇨🇳', style: TextStyle(fontSize: 24)),
+            title: const Text('简体中文'),
+            trailing: currentLocale == 'zh'
+                ? const Icon(Icons.check_circle_rounded, color: AppColors.primary500)
+                : null,
+            onTap: () {
+              cubit.setLocale('zh');
+              Navigator.pop(ctx);
+            },
+          ),
+          ListTile(
+            leading: const Text('🇸🇦', style: TextStyle(fontSize: 24)),
+            title: const Text('العربية'),
+            trailing: currentLocale == 'ar'
+                ? const Icon(Icons.check_circle_rounded, color: AppColors.primary500)
+                : null,
+            onTap: () {
+              cubit.setLocale('ar');
               Navigator.pop(ctx);
             },
           ),
@@ -244,11 +268,28 @@ class _AccountScreenState extends State<AccountScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final user = widget.driveService.currentUser;
+    final loc = AppLocalizations.of(context);
+    final currentLang = context.watch<LocaleCubit>().state.languageCode;
+
+    String getLanguageName(String code) {
+      switch (code) {
+        case 'en':
+          return 'English';
+        case 'es':
+          return 'Español';
+        case 'zh':
+          return '简体中文';
+        case 'ar':
+          return 'العربية';
+        default:
+          return 'Bahasa Indonesia';
+      }
+    }
 
     return Scaffold(
       backgroundColor: isDark ? AppColors.darkBackground : AppColors.lightBackground,
       appBar: AppBar(
-        title: const Text('Akun & Pengaturan'),
+        title: Text(loc.tr('account_settings')),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
@@ -284,7 +325,7 @@ class _AccountScreenState extends State<AccountScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          user?.displayName ?? 'Pengguna Cashbook',
+                          user?.displayName ?? 'Cashbook User',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
@@ -293,7 +334,7 @@ class _AccountScreenState extends State<AccountScreen> {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          user?.email ?? 'Tidak terhubung',
+                          user?.email ?? 'Offline Mode',
                           style: TextStyle(
                             fontSize: 13,
                             color: isDark ? AppColors.gray400 : AppColors.gray500,
@@ -329,14 +370,14 @@ class _AccountScreenState extends State<AccountScreen> {
                             color: AppColors.blue500, size: 20),
                       ),
                       const SizedBox(width: 12),
-                      const Expanded(
+                      Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Google Drive Cloud Sync',
-                                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-                            Text('Tersimpan di file data.cashbook pribadi',
-                                style: TextStyle(fontSize: 11, color: AppColors.gray500)),
+                            Text(loc.tr('drive_sync_title'),
+                                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                            Text(loc.tr('drive_sync_desc'),
+                                style: const TextStyle(fontSize: 11, color: AppColors.gray500)),
                           ],
                         ),
                       ),
@@ -352,7 +393,7 @@ class _AccountScreenState extends State<AccountScreen> {
                                 height: 14,
                                 child: CircularProgressIndicator(strokeWidth: 2),
                               )
-                            : const Text('Sinkron', style: TextStyle(fontSize: 12)),
+                            : Text(loc.tr('sync_now'), style: const TextStyle(fontSize: 12)),
                       ),
                     ],
                   ),
@@ -372,29 +413,29 @@ class _AccountScreenState extends State<AccountScreen> {
                 children: [
                   ListTile(
                     leading: const Icon(Icons.menu_book_rounded, color: AppColors.primary500),
-                    title: const Text('Kelola Buku Kas'),
+                    title: Text(loc.tr('manage_books')),
                     trailing: const Icon(Icons.chevron_right_rounded),
                     onTap: () => context.push('/manage-books'),
                   ),
                   const Divider(height: 1),
                   ListTile(
                     leading: const Icon(Icons.category_rounded, color: AppColors.amber500),
-                    title: const Text('Kelola Kategori'),
+                    title: Text(loc.tr('manage_categories')),
                     trailing: const Icon(Icons.chevron_right_rounded),
                     onTap: () => context.push('/categories'),
                   ),
                   const Divider(height: 1),
                   ListTile(
                     leading: const Icon(Icons.file_download_outlined, color: AppColors.blue500),
-                    title: const Text('Impor Buku Kas (.cbshare)'),
-                    subtitle: const Text('Buka file yang dibagikan orang lain'),
+                    title: Text(loc.tr('import_cbshare')),
+                    subtitle: Text(loc.tr('import_cbshare_sub')),
                     trailing: const Icon(Icons.chevron_right_rounded),
                     onTap: _handleImportBook,
                   ),
                   const Divider(height: 1),
                   ListTile(
                     leading: const Icon(Icons.delete_outline_rounded, color: AppColors.expenseRed),
-                    title: const Text('Sampah (Trash)'),
+                    title: Text(loc.tr('trash_menu')),
                     trailing: const Icon(Icons.chevron_right_rounded),
                     onTap: () => context.push('/trash'),
                   ),
@@ -414,13 +455,9 @@ class _AccountScreenState extends State<AccountScreen> {
                 children: [
                   ListTile(
                     leading: const Icon(Icons.language_rounded),
-                    title: const Text('Bahasa / Language'),
+                    title: Text(loc.tr('language')),
                     subtitle: Text(
-                      context.watch<LocaleCubit>().state.languageCode == 'en'
-                          ? 'English'
-                          : (context.watch<LocaleCubit>().state.languageCode == 'es'
-                              ? 'Español'
-                              : 'Bahasa Indonesia'),
+                      getLanguageName(currentLang),
                       style: const TextStyle(fontSize: 12),
                     ),
                     trailing: const Icon(Icons.chevron_right_rounded),
@@ -429,15 +466,15 @@ class _AccountScreenState extends State<AccountScreen> {
                   const Divider(height: 1),
                   ListTile(
                     leading: const Icon(Icons.dark_mode_outlined),
-                    title: const Text('Tema Tampilan'),
+                    title: Text(loc.tr('app_theme')),
                     trailing: const Icon(Icons.chevron_right_rounded),
                     onTap: _showThemeDialog,
                   ),
                   const Divider(height: 1),
                   SwitchListTile(
                     secondary: const Icon(Icons.lock_outline_rounded),
-                    title: const Text('Kunci PIN'),
-                    subtitle: Text(_isPinSet ? 'PIN aktif' : 'Belum diatur'),
+                    title: Text(loc.tr('pin_security')),
+                    subtitle: Text(_isPinSet ? 'PIN ON' : 'PIN OFF'),
                     value: _isPinSet,
                     onChanged: (val) {
                       if (val) {
@@ -452,8 +489,8 @@ class _AccountScreenState extends State<AccountScreen> {
                     const Divider(height: 1),
                     SwitchListTile(
                       secondary: const Icon(Icons.fingerprint_rounded),
-                      title: const Text('Kunci Biometrik'),
-                      subtitle: const Text('Sidik Jari / Wajah'),
+                      title: Text(loc.tr('biometric_security')),
+                      subtitle: const Text('Touch ID / Face ID'),
                       value: _isBiometricEnabled,
                       onChanged: (val) async {
                         await widget.biometricService.setBiometricEnabled(val);
@@ -474,8 +511,8 @@ class _AccountScreenState extends State<AccountScreen> {
               child: OutlinedButton.icon(
                 onPressed: _handleSignOut,
                 icon: const Icon(Icons.logout_rounded, color: AppColors.expenseRed),
-                label: const Text('Keluar Akun Google',
-                    style: TextStyle(color: AppColors.expenseRed, fontWeight: FontWeight.bold)),
+                label: Text(loc.tr('logout'),
+                    style: const TextStyle(color: AppColors.expenseRed, fontWeight: FontWeight.bold)),
                 style: OutlinedButton.styleFrom(
                   side: const BorderSide(color: AppColors.expenseRed),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),

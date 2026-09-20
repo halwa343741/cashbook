@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:uuid/uuid.dart';
 import '../../../core/constants/colors.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../cubit/book_cubit.dart';
 import '../domain/models/book_model.dart';
 import '../../transaction/cubit/transaction_cubit.dart';
@@ -15,17 +16,17 @@ class CreateInitialBookScreen extends StatefulWidget {
 }
 
 class _CreateInitialBookScreenState extends State<CreateInitialBookScreen> {
-  final _nameController = TextEditingController(text: 'Kas Pribadi');
+  final _nameController = TextEditingController(text: 'Cashbook');
   String _selectedIcon = 'briefcase';
   String _selectedColor = '#10B981';
 
   final List<Map<String, dynamic>> _icons = [
-    {'name': 'briefcase', 'icon': Icons.work_rounded, 'label': 'Pribadi'},
-    {'name': 'store', 'icon': Icons.storefront_rounded, 'label': 'Usaha'},
-    {'name': 'home', 'icon': Icons.home_rounded, 'label': 'Rumah'},
-    {'name': 'savings', 'icon': Icons.savings_rounded, 'label': 'Tabungan'},
-    {'name': 'payments', 'icon': Icons.payments_rounded, 'label': 'Gaji'},
-    {'name': 'restaurant', 'icon': Icons.restaurant_rounded, 'label': 'Kuliner'},
+    {'name': 'briefcase', 'icon': Icons.work_rounded},
+    {'name': 'store', 'icon': Icons.storefront_rounded},
+    {'name': 'home', 'icon': Icons.home_rounded},
+    {'name': 'savings', 'icon': Icons.savings_rounded},
+    {'name': 'payments', 'icon': Icons.payments_rounded},
+    {'name': 'restaurant', 'icon': Icons.restaurant_rounded},
   ];
 
   final List<String> _colors = [
@@ -65,6 +66,7 @@ class _CreateInitialBookScreenState extends State<CreateInitialBookScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final loc = AppLocalizations.of(context);
 
     return Scaffold(
       backgroundColor: isDark ? AppColors.darkBackground : AppColors.lightBackground,
@@ -76,7 +78,7 @@ class _CreateInitialBookScreenState extends State<CreateInitialBookScreen> {
             children: [
               const SizedBox(height: 20),
               Text(
-                'Buat Buku Kas Pertama',
+                loc.tr('create_first_book'),
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
@@ -85,7 +87,7 @@ class _CreateInitialBookScreenState extends State<CreateInitialBookScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Pisahkan pencatatan keuangan Anda ke dalam buku kas (misal: Kas Pribadi, Kas Toko, dll).',
+                loc.tr('create_first_book_desc'),
                 style: TextStyle(
                   fontSize: 14,
                   color: isDark ? AppColors.gray400 : AppColors.gray600,
@@ -94,7 +96,7 @@ class _CreateInitialBookScreenState extends State<CreateInitialBookScreen> {
               const SizedBox(height: 32),
               // Nama Buku
               Text(
-                'Nama Buku Kas',
+                loc.tr('book_name'),
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -105,7 +107,7 @@ class _CreateInitialBookScreenState extends State<CreateInitialBookScreen> {
               TextField(
                 controller: _nameController,
                 decoration: InputDecoration(
-                  hintText: 'Contoh: Kas Pribadi, Kas Toko',
+                  hintText: loc.tr('book_name'),
                   prefixIcon: const Icon(Icons.menu_book_rounded),
                   filled: true,
                   fillColor: isDark ? AppColors.darkSurface : Colors.white,
@@ -120,7 +122,7 @@ class _CreateInitialBookScreenState extends State<CreateInitialBookScreen> {
               const SizedBox(height: 24),
               // Ikon
               Text(
-                'Pilih Ikon',
+                loc.tr('select_icon'),
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -169,7 +171,7 @@ class _CreateInitialBookScreenState extends State<CreateInitialBookScreen> {
               const SizedBox(height: 24),
               // Warna
               Text(
-                'Pilih Warna Tema',
+                loc.tr('select_color'),
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -228,9 +230,9 @@ class _CreateInitialBookScreenState extends State<CreateInitialBookScreen> {
                     ),
                     elevation: 2,
                   ),
-                  child: const Text(
-                    'Mulai Gunakan Cashbook',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  child: Text(
+                    loc.tr('start_now'),
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                 ),
               ),
