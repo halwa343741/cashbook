@@ -1,7 +1,7 @@
 # Cashbook Runner Script
 param(
     [string]$Device = "",
-    [string]$LastOctet = "26",
+    [string]$LastOctet = "",
     [string]$Ip = "",
     [string]$Port = "",
     [switch]$Pair,
@@ -19,40 +19,75 @@ if (-not $adbCmd) {
     }
 }
 
-# 2. Deteksi Subnet Wi-Fi lokal (misal: 192.168.18.)
-$wifiIp = (Get-NetIPAddress -AddressFamily IPv4 -InterfaceAlias "Wi-Fi*" -ErrorAction SilentlyContinue | Select-Object -First 1).IPAddress
-if ($wifiIp -match "^(\d+\.\d+\.\d+\.)") {
-    $subnetPrefix = $matches[1]
-} else {
-    $subnetPrefix = "192.168.18."
+# 2. Deteksi IP aktif & subnet komputer tempat project dijalankan (tanpa hardcode)
+function Get-HostNetworkInfo {
+    # Metode 1: UdpClient query route OS ke gateway/internet
+    try {
+        $s = New-Object System.Net.Sockets.UdpClient
+        $s.Connect("8.8.8.8", 53)
+        $detectedIp = $s.Client.LocalEndPoint.Address.ToString()
+        $s.Close()
+        if ($detectedIp -match "^(\d+\.\d+\.\d+\.)") {
+            return [PSCustomObject]@{ Subnet = $matches[1]; HostIp = $detectedIp }
+        }
+    } catch {}
+
+    # Metode 2: Cari route default gateway aktif (0.0.0.0/0)
+    try {
+        $route = Get-NetRoute -DestinationPrefix "0.0.0.0/0" -ErrorAction SilentlyContinue | Sort-Object RouteMetric | Select-Object -First 1
+        if ($route) {
+            $ipObj = Get-NetIPAddress -InterfaceIndex $route.InterfaceIndex -AddressFamily IPv4 -ErrorAction SilentlyContinue | Select-Object -First 1
+            if ($ipObj -and $ipObj.IPAddress -match "^(\d+\.\d+\.\d+\.)") {
+                return [PSCustomObject]@{ Subnet = $matches[1]; HostIp = $ipObj.IPAddress }
+            }
+        }
+    } catch {}
+
+    # Metode 3: IPv4 non-loopback dan non-APIPA pertama
+    try {
+        $firstIp = (Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue | Where-Object { 
+            $_.IPAddress -notlike "127.*" -and $_.IPAddress -notlike "169.254.*" -and $_.IPAddress -notlike "172.26.*" 
+        } | Select-Object -First 1).IPAddress
+        if ($firstIp -match "^(\d+\.\d+\.\d+\.)") {
+            return [PSCustomObject]@{ Subnet = $matches[1]; HostIp = $firstIp }
+        }
+    } catch {}
+
+    return [PSCustomObject]@{ Subnet = ""; HostIp = "" }
 }
 
-# Helper untuk menyusun IP lengkap dari input user (cukup angka terakhir / full IP)
-function Resolve-DeviceIp([string]$rawInput, [string]$defaultOctet = "26") {
+$netInfo = Get-HostNetworkInfo
+$computerIp = $netInfo.HostIp
+$subnetPrefix = $netInfo.Subnet
+
+# Helper untuk menyusun IP lengkap dari input user (angka terakhir atau full IP)
+function Resolve-DeviceIp([string]$rawInput, [string]$fallbackOctet = "") {
     if ([string]::IsNullOrWhiteSpace($rawInput)) {
-        return "$subnetPrefix$defaultOctet"
+        if (-not [string]::IsNullOrWhiteSpace($fallbackOctet)) {
+            return "$subnetPrefix$fallbackOctet"
+        }
+        return ""
     }
     $trimmed = $rawInput.Trim()
-    # Jika sudah merupakan format full IP (misal: 192.168.18.26)
+    # Jika sudah format full IP (minimal ada 3 titik)
     if ($trimmed -match "^\d+\.\d+\.\d+\.\d+$") {
         return $trimmed
     }
     # Jika hanya angka terakhir (misal: 26 atau .26)
     $cleanOctet = $trimmed.TrimStart('.')
-    return "$subnetPrefix$cleanOctet"
-}
-
-# Inisialisasi IP aktif
-if ([string]::IsNullOrWhiteSpace($Ip)) {
-    $currentIp = Resolve-DeviceIp $LastOctet $LastOctet
-} else {
-    $currentIp = Resolve-DeviceIp $Ip $LastOctet
+    if (-not [string]::IsNullOrWhiteSpace($subnetPrefix)) {
+        return "$subnetPrefix$cleanOctet"
+    }
+    return $cleanOctet
 }
 
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "       CASHBOOK APP RUNNER              " -ForegroundColor Green
 Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "[i] Subnet Wi-Fi aktif : $subnetPrefix* (Default HP: $currentIp)" -ForegroundColor DarkGray
+if (-not [string]::IsNullOrWhiteSpace($computerIp)) {
+    Write-Host "[i] IP Komputer ini : $computerIp" -ForegroundColor DarkGray
+    Write-Host "[i] Subnet Jaringan : $subnetPrefix*" -ForegroundColor DarkGray
+}
 
 # 3. Clean jika diminta
 if ($Clean) {
@@ -65,9 +100,10 @@ if ($Clean) {
 # 4. Mode Pairing Wi-Fi Debugging
 if ($Pair) {
     Write-Host "`n--- Wi-Fi ADB Pairing ---" -ForegroundColor Magenta
-    $inputOctet = Read-Host "Masukkan ujung IP HP ($subnetPrefix[xxx]) [26]"
-    $pairIp = Resolve-DeviceIp $inputOctet "26"
-    $pairPort = Read-Host "Masukkan Pairing Port 5-digit (misal: 41245)"
+    $promptLabel = if ($subnetPrefix) { "Masukkan ujung IP HP ($subnetPrefix[xxx]) atau full IP" } else { "Masukkan IP HP" }
+    $inputOctet = Read-Host $promptLabel
+    $pairIp = Resolve-DeviceIp $inputOctet
+    $pairPort = Read-Host "Masukkan 5-digit Pairing Port (misal: 41245)"
     $pairCode = Read-Host "Masukkan 6-digit Pairing Code (misal: 532222)"
     
     Write-Host "[*] Melakukan pairing ke $pairIp`:$pairPort..." -ForegroundColor Cyan
@@ -76,14 +112,22 @@ if ($Pair) {
     $connectPort = Read-Host "`nMasukkan Port Sambungan Wireless Debugging utama (di bawah IP address)"
     if (-not [string]::IsNullOrWhiteSpace($connectPort)) {
         $Port = $connectPort
-        $currentIp = $pairIp
+        $Ip = $pairIp
     }
 }
 
-# 5. Hubungkan ke Wi-Fi ADB jika Port diberikan lewat parameter / pairing
-if (-not [string]::IsNullOrWhiteSpace($Port)) {
-    Write-Host "[*] Menghubungkan ke $currentIp`:$Port..." -ForegroundColor Cyan
-    adb connect "$currentIp`:$Port"
+# 5. Tentukan IP tujuan dari parameter jika diberikan
+$targetIp = ""
+if (-not [string]::IsNullOrWhiteSpace($Ip)) {
+    $targetIp = Resolve-DeviceIp $Ip
+} elseif (-not [string]::IsNullOrWhiteSpace($LastOctet)) {
+    $targetIp = Resolve-DeviceIp $LastOctet
+}
+
+# Hubungkan jika Port dan IP sudah tersedia
+if (-not [string]::IsNullOrWhiteSpace($Port) -and -not [string]::IsNullOrWhiteSpace($targetIp)) {
+    Write-Host "[*] Menghubungkan ke $targetIp`:$Port..." -ForegroundColor Cyan
+    adb connect "$targetIp`:$Port"
 }
 
 # 6. Cek Perangkat Terhubung
@@ -117,10 +161,10 @@ if ([string]::IsNullOrWhiteSpace($targetDevice)) {
             $targetDevice = $attachedDevices[[int]$pilihan - 1].Id
         }
     } else {
-        # Tidak ada device ADB terhubung, tampilkan menu cepat
+        # Tidak ada device ADB terhubung, tampilkan menu
         Write-Host "`n[!] Belum ada perangkat Android terhubung via ADB." -ForegroundColor Yellow
         Write-Host "Pilih target yang ingin dijalankan:"
-        Write-Host "  [1] Sambungkan Samsung via Wi-Fi (Cukup masukkan Port & Ujung IP)" -ForegroundColor Cyan
+        Write-Host "  [1] Hubungkan Android via Wi-Fi" -ForegroundColor Cyan
         Write-Host "  [2] Jalankan di Windows Desktop" -ForegroundColor White
         Write-Host "  [3] Jalankan di Chrome (Web)" -ForegroundColor White
         Write-Host "  [4] Tampilkan semua device Flutter" -ForegroundColor White
@@ -134,13 +178,14 @@ if ([string]::IsNullOrWhiteSpace($targetDevice)) {
                 $targetDevice = Read-Host "Masukkan Device ID dari list di atas"
             }
             default {
-                $targetPort = Read-Host "Masukkan Port Wireless Debugging Samsung (misal: 44557)"
+                $targetPort = Read-Host "Masukkan Port Wireless Debugging HP (misal: 44557)"
                 if (-not [string]::IsNullOrWhiteSpace($targetPort)) {
-                    $inputOctet = Read-Host "Masukkan angka terakhir IP Samsung ($subnetPrefix[xxx]) [26]"
-                    $targetIp = Resolve-DeviceIp $inputOctet "26"
-                    Write-Host "[*] Menghubungkan ke $targetIp`:$targetPort..." -ForegroundColor Cyan
-                    adb connect "$targetIp`:$targetPort"
-                    $targetDevice = "$targetIp`:$targetPort"
+                    $promptLabel = if ($subnetPrefix) { "Masukkan angka terakhir IP HP ($subnetPrefix[xxx]) atau full IP" } else { "Masukkan IP HP" }
+                    $inputVal = Read-Host $promptLabel
+                    $finalIp = Resolve-DeviceIp $inputVal
+                    Write-Host "[*] Menghubungkan ke $finalIp`:$targetPort..." -ForegroundColor Cyan
+                    adb connect "$finalIp`:$targetPort"
+                    $targetDevice = "$finalIp`:$targetPort"
                 }
             }
         }
