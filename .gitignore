@@ -1,3 +1,7 @@
 # Local MCP configs containing sensitive tokens
 .agents/mcp_config.json
 .agents/plugins/**/mcp_config.json
+
+# Environment variables
+.env
+*.env

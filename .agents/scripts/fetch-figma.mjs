@@ -1,4 +1,19 @@
 import https from 'https';
+import fs from 'fs';
+import path from 'path';
+
+// Auto-load .env from project root if present
+const envPath = path.resolve('.env');
+if (fs.existsSync(envPath)) {
+  const envLines = fs.readFileSync(envPath, 'utf8').split('\n');
+  for (const line of envLines) {
+    const trimmed = line.trim();
+    if (trimmed && !trimmed.startsWith('#') && trimmed.includes('=')) {
+      const [key, ...rest] = trimmed.split('=');
+      process.env[key.trim()] = rest.join('=').trim();
+    }
+  }
+}
 
 const TOKEN = process.env.FIGMA_TOKEN || process.env.FIGMA_PERSONAL_ACCESS_TOKEN || '';
 
