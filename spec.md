@@ -10,7 +10,10 @@ Dokumen spesifikasi teknis dan panduan implementasi aplikasi mobile **Cashbook**
 |---|---|
 | **Nama Aplikasi** | **Cashbook** (Aplikasi Catatan Keuangan & Kasir Digital Pribadi) |
 | **Sistem Pengelompokan** | **Multi-Folder / Multi-Buku Kas (Parent-Child)**: Transaksi in/out dikelompokkan per Buku/Folder (misal: *Kas Pribadi*, *Kas Usaha*, *Kas Tabungan*) |
-| **Fitur Berbagi (Sharing)** | **Share Buku Kas Read-Only**: Bagikan buku tertentu via file `.cbshare` / link ke WA/sosmed; penerima dapat melihat mutasi & laporan secara *read-only* (hanya-baca) |
+| **Siklus Hidup Buku Kas** | **Buka (Open), Tutup (Closed), dan Buka Kembali (Reopen)**: Buku yang ditutup mengunci mutasi (final snapshot) dan dapat dibuka kembali kapan saja oleh pemilik |
+| **Aturan Berbagi Berkas** | **Share File (.cbshare) HANYA untuk Buku yang Ditutup (Closed Books)**: Sebagai laporan rekapan final yang tidak berubah |
+| **Aturan Berbagi Tautan** | **Share Link Live untuk Buku Buka maupun Tutup (Open & Closed Books)**: Penerima dapat memantau saldo & mutasi secara live via koneksi Google Drive |
+| **Multi-Bahasa (Localization)** | **Bahasa Indonesia (`id`), English (`en`), Español (`es`)**: Format angka ribuan, mata uang, dan tanggal/jam dinamis mengikuti locale bahasa yang dipilih |
 | **Keamanan Data** | **Kunci Aplikasi dengan PIN & Biometrik** (Fingerprint / Face ID via `local_auth`) |
 | **Sistem Penghapusan** | **Soft-Delete & Tong Sampah (Trash)**: Mencegah kehilangan data buku kas & transaksi dengan fitur Restore |
 | **Ekspor Laporan** | **Ekspor PDF & Excel (.xlsx / .csv)** untuk cetak dan rekap data |
@@ -216,6 +219,43 @@ Pengguna memilih menu *"Bagikan Buku Kas"* di Screen 10:
 * **Opsi Bagi Penerima**:
   * **"Keluarkan dari Buku Saya"**: Menghapus buku terbagikan tersebut dari perangkat penerima tanpa mempengaruhi data pemilik asli.
   * **"Salin sebagai Buku Saya (Bisa Diedit)"**: Menduplikasi seluruh mutasi menjadi buku kas pribadi independen yang terpisah.
+
+### 3.6. Siklus Hidup Buku Kas (Open, Closed, Reopened) & Aturan Berbagi
+1. **Status Buku Kas**:
+   * **Buku Terbuka (`isClosed = false`)**: Buku kas dalam mode aktif pencatatan operasional harian. Transaksi pemasukan, pengeluaran, dan edit data dapat dilakukan bebas.
+   * **Buku Ditutup (`isClosed = true`, `closedAt`)**: Buku kas difinalisasi/dikunci (misal tutup buku bulanan/tahunan).
+     * Seluruh transaksi terkunci secara permanen selama status closed.
+     * Tombol tambah pemasukan/pengeluaran dinonaktifkan dengan banner notifikasi informatif.
+     * Saldo akhir menjadi saldo tetap yang terdokumentasi rapi.
+   * **Buka Kembali (Reopen)**: Pemilik buku kas memiliki otoritas penuh untuk membuka kembali buku kas yang telah ditutup kapan saja untuk melanjutkan pencatatan jika terdapat revisi.
+2. **Aturan Validasi Berbagi Berkas vs Tautan**:
+   * **Ekspor & Berbagi File `.cbshare`**:
+     * **HANYA BERLAKU UNTUK CLOSED BOOKS**.
+     * Jika pengguna mencoba membagikan buku yang masih Open via file, aplikasi menampilkan dialog edukatif: *"Buku kas harus ditutup terlebih dahulu sebelum dibagikan sebagai berkas laporan rekapan."*
+     * Hal ini menjamin bahwa berkas fisik `.cbshare` yang beredar di WA/sosmed merupakan rekapan final yang valid.
+   * **Berbagi Tautan Langsung (Live Google Drive Link)**:
+     * **BERLAKU UNTUK OPEN DAN CLOSED BOOKS**.
+     * Link berbagi menggunakan format deep link `cashbook://share?driveId=...` yang mengarah ke file sinkronisasi Google Drive pemilik.
+     * Penerima dapat memantau pergerakan saldo dan mutasi secara **Live** (Read-Only) setiap kali pemilik melakukan sinkronisasi data ke Google Drive.
+     * Tetap 100% Bebas Biaya Server & Domain (memanfaatkan Google Drive API & protocol URI scheme).
+
+### 3.7. Sistem Multi-Bahasa & Format Dinamis (Localization)
+1. **Pilihan Bahasa Tersedia**:
+   * 🇮🇩 **Bahasa Indonesia (`id`)**: Bahasa default aplikasi.
+   * 🇺🇸 **English (`en`)**: Bahasa internasional.
+   * 🇪🇸 **Español (`es`)**: Bahasa Spanyol.
+2. **Format Angka & Mata Uang Dinamis**:
+   * Menyesuaikan secara otomatis berdasarkan bahasa/locale yang dipilih pengguna:
+     * `id`: Format Rupiah `Rp 1.500.000` (titik sebagai pemisah ribuan).
+     * `en`: Format Dollar `$ 1,500,000` (koma sebagai pemisah ribuan).
+     * `es`: Format Euro `1.500.000 €`.
+3. **Format Tanggal & Waktu Dinamis**:
+   * Menyesuaikan standar lokal masing-masing negara:
+     * `id`: `20 Sep 2026, 14:30` (format 24 jam).
+     * `en`: `Sep 20, 2026, 02:30 PM` (format 12 jam dengan AM/PM).
+     * `es`: `20 sep 2026, 14:30`.
+4. **Penyimpanan Preferensi Bahasa**:
+   * Bahasa pilihan disimpan di `SharedPreferences` (`app_locale`) dan dapat diubah secara instan di menu Pengaturan Akun tanpa perlu me-restart aplikasi.
 
 ---
 

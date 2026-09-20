@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'app/routes/app_router.dart';
 import 'core/database/local_storage_service.dart';
+import 'core/localization/app_localizations.dart';
 import 'core/services/biometric_service.dart';
 import 'core/services/excel_export_service.dart';
 import 'core/services/google_drive_service.dart';
@@ -9,6 +10,7 @@ import 'core/services/pdf_export_service.dart';
 import 'core/services/share_service.dart';
 import 'core/theme/app_theme.dart';
 import 'features/book/cubit/book_cubit.dart';
+import 'features/localization/cubit/locale_cubit.dart';
 import 'features/theme/cubit/theme_cubit.dart';
 import 'features/transaction/cubit/transaction_cubit.dart';
 
@@ -57,17 +59,28 @@ class CashbookApp extends StatelessWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider(create: (_) => ThemeCubit()),
+        BlocProvider(create: (_) => LocaleCubit()),
         BlocProvider(create: (_) => BookCubit(storage: storage)),
         BlocProvider(create: (_) => TransactionCubit(storage: storage)),
       ],
       child: BlocBuilder<ThemeCubit, ThemeMode>(
         builder: (context, themeMode) {
+          final locale = context.watch<LocaleCubit>().state;
           return MaterialApp.router(
             title: 'Cashbook',
             debugShowCheckedModeBanner: false,
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,
             themeMode: themeMode,
+            locale: locale,
+            supportedLocales: const [
+              Locale('id'),
+              Locale('en'),
+              Locale('es'),
+            ],
+            localizationsDelegates: const [
+              AppLocalizationsDelegate(),
+            ],
             routerConfig: router,
           );
         },

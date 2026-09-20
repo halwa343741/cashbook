@@ -5,6 +5,13 @@ import 'package:share_plus/share_plus.dart';
 import '../../features/book/domain/models/book_model.dart';
 import '../database/local_storage_service.dart';
 
+class BookNotClosedException implements Exception {
+  final String message;
+  BookNotClosedException([this.message = 'Buku kas harus ditutup terlebih dahulu sebelum dibagikan sebagai berkas.']);
+  @override
+  String toString() => message;
+}
+
 class ShareService {
   final LocalStorageService _storage;
 
@@ -23,6 +30,13 @@ class ShareService {
       book = _storage.getBooks(includeDeleted: true).firstWhere((b) => b.id == bookId);
     }
 
+    // Check constraint: File sharing is ONLY allowed for closed books!
+    if (!book.isClosed) {
+      throw BookNotClosedException(
+        'Buku kas harus ditutup (Closed) terlebih dahulu sebelum dapat dibagikan sebagai berkas rekapan.',
+      );
+    }
+
     final jsonContent = _storage.exportBookAsJson(bookId);
 
     final encodedBase64 = base64Encode(utf8.encode(jsonContent));
@@ -37,16 +51,41 @@ class ShareService {
     await SharePlus.instance.share(
       ShareParams(
         files: [XFile(file.path, mimeType: 'application/x-cashbook')],
-        subject: 'Buku Kas Cashbook: ${book.name} (Hanya-Baca)',
+        subject: 'Buku Kas Cashbook (Final): ${book.name}',
         text:
-            'Berikut Buku Kas "${book.name}" dari aplikasi Cashbook. Buka file ini menggunakan aplikasi Cashbook untuk melihat riwayat keuangan (Read-Only).',
+            'Berikut Rekapan Buku Kas "${book.name}" (Status: Ditutup/Final) dari aplikasi Cashbook. Buka file ini menggunakan aplikasi Cashbook untuk melihat riwayat keuangan (Read-Only).',
+      ),
+    );
+  }
+
+  Future<void> shareBookAsLiveLink(dynamic bookOrId) async {
+    String bookId;
+    BookModel book;
+
+    if (bookOrId is BookModel) {
+      book = bookOrId;
+      bookId = book.id;
+    } else {
+      bookId = bookOrId.toString();
+      book = _storage.getBooks(includeDeleted: true).firstWhere((b) => b.id == bookId);
+    }
+
+    final encodedName = Uri.encodeComponent(book.name);
+    final deepLink = 'cashbook://share?bookId=$bookId&name=$encodedName';
+
+    final statusText = book.isClosed ? 'Ditutup / Final' : 'Aktif / Berjalan';
+
+    await SharePlus.instance.share(
+      ShareParams(
+        subject: 'Tautan Pantau Live Buku Kas: ${book.name}',
+        text:
+            'Pantau arus kas Buku "${book.name}" (Status: $statusText) secara Live Read-Only.\n\nBuka tautan ini di aplikasi Cashbook:\n$deepLink\n\n(100% Gratis, tersinkronisasi via Google Drive).',
       ),
     );
   }
 
   Future<BookModel?> pickAndImportSharedBook() async {
     try {
-      // In mobile environment, this would pick file. For safety fallback:
       final tempDir = await getTemporaryDirectory();
       final files = tempDir.listSync().whereType<File>().where((f) => f.path.endsWith('.cbshare'));
       if (files.isNotEmpty) {

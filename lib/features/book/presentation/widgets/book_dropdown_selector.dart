@@ -105,7 +105,24 @@ class BookDropdownSelector extends StatelessWidget {
                                 color: isDark ? Colors.white : AppColors.gray900,
                               ),
                             ),
-                            if (book.isReadOnly)
+                            if (book.isClosed)
+                              Container(
+                                margin: const EdgeInsets.only(left: 8),
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: AppColors.expenseRed.withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: const Text(
+                                  'Ditutup',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.expenseRed,
+                                  ),
+                                ),
+                              )
+                            else if (book.isReadOnly)
                               Container(
                                 margin: const EdgeInsets.only(left: 8),
                                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),

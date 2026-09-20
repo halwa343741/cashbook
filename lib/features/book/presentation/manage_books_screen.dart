@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:uuid/uuid.dart';
 import '../../../core/constants/colors.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/services/share_service.dart';
 import '../cubit/book_cubit.dart';
 import '../domain/models/book_model.dart';
@@ -26,6 +27,7 @@ class _ManageBooksScreenState extends State<ManageBooksScreen> {
     String selectedColor = bookToEdit?.color ?? '#10B981';
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final loc = AppLocalizations.of(context);
 
     final icons = [
       {'name': 'briefcase', 'icon': Icons.work_rounded},
@@ -70,7 +72,7 @@ class _ManageBooksScreenState extends State<ManageBooksScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        bookToEdit == null ? 'Tambah Buku Kas' : 'Ubah Buku Kas',
+                        bookToEdit == null ? loc.tr('manage_books') : loc.tr('update'),
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -87,7 +89,7 @@ class _ManageBooksScreenState extends State<ManageBooksScreen> {
                   TextField(
                     controller: nameController,
                     decoration: InputDecoration(
-                      hintText: 'Nama Buku Kas',
+                      hintText: loc.tr('book_name'),
                       filled: true,
                       fillColor: isDark ? AppColors.darkBackground : AppColors.gray50,
                       border: OutlineInputBorder(
@@ -97,7 +99,7 @@ class _ManageBooksScreenState extends State<ManageBooksScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  const Text('Pilih Ikon:', style: TextStyle(fontWeight: FontWeight.w600)),
+                  Text(loc.tr('select_icon'), style: const TextStyle(fontWeight: FontWeight.w600)),
                   const SizedBox(height: 8),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -129,7 +131,7 @@ class _ManageBooksScreenState extends State<ManageBooksScreen> {
                     }).toList(),
                   ),
                   const SizedBox(height: 16),
-                  const Text('Pilih Warna:', style: TextStyle(fontWeight: FontWeight.w600)),
+                  Text(loc.tr('select_color'), style: const TextStyle(fontWeight: FontWeight.w600)),
                   const SizedBox(height: 8),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -187,7 +189,7 @@ class _ManageBooksScreenState extends State<ManageBooksScreen> {
                           borderRadius: BorderRadius.circular(14),
                         ),
                       ),
-                      child: Text(bookToEdit == null ? 'Simpan' : 'Perbarui'),
+                      child: Text(bookToEdit == null ? loc.tr('save') : loc.tr('update')),
                     ),
                   ),
                 ],
@@ -199,22 +201,92 @@ class _ManageBooksScreenState extends State<ManageBooksScreen> {
     );
   }
 
-  void _shareBook(BookModel book) {
+  void _handleShareFile(BookModel book) {
+    final loc = AppLocalizations.of(context);
+    if (!book.isClosed) {
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(loc.tr('share_file')),
+          content: Text(loc.tr('share_file_closed_only')),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text(loc.tr('cancel')),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final bookCubit = context.read<BookCubit>();
+                Navigator.pop(ctx);
+                await bookCubit.closeBook(book.id);
+                final updated = bookCubit.state.books.firstWhere((b) => b.id == book.id);
+                widget.shareService.shareBookAsFile(updated);
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary500),
+              child: Text(loc.tr('close_now'), style: const TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
     widget.shareService.shareBookAsFile(book);
   }
 
-  void _deleteBook(BookModel book) {
+  void _handleShareLiveLink(BookModel book) {
+    widget.shareService.shareBookAsLiveLink(book);
+  }
+
+  void _handleToggleBookStatus(BookModel book) {
+    final loc = AppLocalizations.of(context);
+    final isClosing = !book.isClosed;
+
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Hapus Buku Kas?'),
+        title: Text(isClosing ? loc.tr('close_book_confirm_title') : loc.tr('reopen_book_confirm_title')),
+        content: Text(isClosing ? loc.tr('close_book_confirm_desc') : loc.tr('reopen_book_confirm_desc')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(loc.tr('cancel')),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              if (isClosing) {
+                context.read<BookCubit>().closeBook(book.id);
+              } else {
+                context.read<BookCubit>().reopenBook(book.id);
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: isClosing ? AppColors.expenseRed : AppColors.primary500,
+            ),
+            child: Text(
+              isClosing ? loc.tr('close_book') : loc.tr('reopen_book'),
+              style: const TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _deleteBook(BookModel book) {
+    final loc = AppLocalizations.of(context);
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('${loc.tr('delete_to_trash')}?'),
         content: Text(
-          'Buku kas "${book.name}" beserta transaksinya akan dipindahkan ke Sampah (Trash) dan dapat dipulihkan kapan saja.',
+          'Buku kas "${book.name}" beserta transaksinya akan dipindahkan ke Sampah dan dapat dipulihkan kapan saja.',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Batal'),
+            child: Text(loc.tr('cancel')),
           ),
           ElevatedButton(
             onPressed: () {
@@ -222,7 +294,7 @@ class _ManageBooksScreenState extends State<ManageBooksScreen> {
               context.read<BookCubit>().softDeleteBook(book.id);
             },
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.expenseRed),
-            child: const Text('Hapus ke Sampah', style: TextStyle(color: Colors.white)),
+            child: Text(loc.tr('delete_to_trash'), style: const TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -251,11 +323,12 @@ class _ManageBooksScreenState extends State<ManageBooksScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final loc = AppLocalizations.of(context);
 
     return Scaffold(
       backgroundColor: isDark ? AppColors.darkBackground : AppColors.lightBackground,
       appBar: AppBar(
-        title: const Text('Kelola Buku Kas'),
+        title: Text(loc.tr('manage_books')),
         actions: [
           IconButton(
             icon: const Icon(Icons.add_rounded),
@@ -280,11 +353,11 @@ class _ManageBooksScreenState extends State<ManageBooksScreen> {
                   children: [
                     const Icon(Icons.book_outlined, size: 64, color: AppColors.gray400),
                     const SizedBox(height: 12),
-                    const Text('Belum ada buku kas aktif'),
+                    Text(loc.tr('no_transactions')),
                     const SizedBox(height: 12),
                     ElevatedButton(
                       onPressed: () => _openAddEditBookDialog(),
-                      child: const Text('Buat Buku Kas'),
+                      child: Text(loc.tr('manage_books')),
                     ),
                   ],
                 ),
@@ -334,8 +407,43 @@ class _ManageBooksScreenState extends State<ManageBooksScreen> {
                             ),
                           ),
                         ),
+                        if (book.isClosed)
+                          Container(
+                            margin: const EdgeInsets.only(left: 6),
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppColors.expenseRed.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              loc.tr('status_closed'),
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.expenseRed,
+                              ),
+                            ),
+                          )
+                        else
+                          Container(
+                            margin: const EdgeInsets.only(left: 6),
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary500.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              loc.tr('status_open'),
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.primary500,
+                              ),
+                            ),
+                          ),
                         if (book.isReadOnly)
                           Container(
+                            margin: const EdgeInsets.only(left: 6),
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                             decoration: BoxDecoration(
                               color: AppColors.amber500.withValues(alpha: 0.15),
@@ -355,7 +463,7 @@ class _ManageBooksScreenState extends State<ManageBooksScreen> {
                             margin: const EdgeInsets.only(left: 6),
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                             decoration: BoxDecoration(
-                              color: AppColors.primary500.withValues(alpha: 0.15),
+                              color: AppColors.blue500.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: const Text(
@@ -363,16 +471,18 @@ class _ManageBooksScreenState extends State<ManageBooksScreen> {
                               style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600,
-                                color: AppColors.primary500,
+                                color: AppColors.blue500,
                               ),
                             ),
                           ),
                       ],
                     ),
                     subtitle: Text(
-                      book.sharedBy != null
-                          ? 'Dibagikan oleh: ${book.sharedBy}'
-                          : 'Dibuat: ${book.createdAt.day}/${book.createdAt.month}/${book.createdAt.year}',
+                      book.isClosed && book.closedAt != null
+                          ? 'Ditutup: ${book.closedAt!.day}/${book.closedAt!.month}/${book.closedAt!.year}'
+                          : (book.sharedBy != null
+                              ? 'Dibagikan oleh: ${book.sharedBy}'
+                              : 'Dibuat: ${book.createdAt.day}/${book.createdAt.month}/${book.createdAt.year}'),
                       style: const TextStyle(fontSize: 12),
                     ),
                     onTap: () {
@@ -384,56 +494,98 @@ class _ManageBooksScreenState extends State<ManageBooksScreen> {
                         if (val == 'select') {
                           context.read<BookCubit>().selectBook(book.id);
                           context.read<TransactionCubit>().loadTransactions(book.id);
+                        } else if (val == 'toggle_status') {
+                          _handleToggleBookStatus(book);
                         } else if (val == 'edit') {
                           _openAddEditBookDialog(book);
-                        } else if (val == 'share') {
-                          _shareBook(book);
+                        } else if (val == 'share_file') {
+                          _handleShareFile(book);
+                        } else if (val == 'share_link') {
+                          _handleShareLiveLink(book);
                         } else if (val == 'delete') {
                           _deleteBook(book);
                         }
                       },
                       itemBuilder: (context) => [
                         if (!isActive)
-                          const PopupMenuItem(
+                          PopupMenuItem(
                             value: 'select',
                             child: Row(
                               children: [
-                                Icon(Icons.check_circle_outline, size: 18),
-                                SizedBox(width: 8),
-                                Text('Pilih Buku'),
+                                const Icon(Icons.check_circle_outline, size: 18),
+                                const SizedBox(width: 8),
+                                Text(loc.tr('select_book')),
                               ],
                             ),
                           ),
-                        if (!book.isReadOnly)
-                          const PopupMenuItem(
+                        PopupMenuItem(
+                          value: 'toggle_status',
+                          child: Row(
+                            children: [
+                              Icon(
+                                book.isClosed ? Icons.lock_open_rounded : Icons.lock_outline_rounded,
+                                size: 18,
+                                color: book.isClosed ? AppColors.primary500 : AppColors.expenseRed,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                book.isClosed ? loc.tr('reopen_book') : loc.tr('close_book'),
+                                style: TextStyle(
+                                  color: book.isClosed ? AppColors.primary500 : AppColors.expenseRed,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (!book.isReadOnly && !book.isClosed)
+                          PopupMenuItem(
                             value: 'edit',
                             child: Row(
                               children: [
-                                Icon(Icons.edit_outlined, size: 18),
-                                SizedBox(width: 8),
-                                Text('Ubah'),
+                                const Icon(Icons.edit_outlined, size: 18),
+                                const SizedBox(width: 8),
+                                Text(loc.tr('update')),
                               ],
                             ),
                           ),
-                        const PopupMenuItem(
-                          value: 'share',
+                        PopupMenuItem(
+                          value: 'share_file',
                           child: Row(
                             children: [
-                              Icon(Icons.share_outlined, size: 18),
-                              SizedBox(width: 8),
-                              Text('Bagikan (.cbshare)'),
+                              Icon(
+                                Icons.file_present_outlined,
+                                size: 18,
+                                color: book.isClosed ? AppColors.primary500 : AppColors.gray400,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                loc.tr('share_file'),
+                                style: TextStyle(
+                                  color: book.isClosed ? null : AppColors.gray400,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: 'share_link',
+                          child: Row(
+                            children: [
+                              const Icon(Icons.link_rounded, size: 18, color: AppColors.blue500),
+                              const SizedBox(width: 8),
+                              Text(loc.tr('share_link')),
                             ],
                           ),
                         ),
                         if (books.length > 1)
-                          const PopupMenuItem(
+                          PopupMenuItem(
                             value: 'delete',
                             child: Row(
                               children: [
-                                Icon(Icons.delete_outline, size: 18, color: AppColors.expenseRed),
-                                SizedBox(width: 8),
-                                Text('Hapus ke Sampah',
-                                    style: TextStyle(color: AppColors.expenseRed)),
+                                const Icon(Icons.delete_outline, size: 18, color: AppColors.expenseRed),
+                                const SizedBox(width: 8),
+                                Text(loc.tr('delete_to_trash'),
+                                    style: const TextStyle(color: AppColors.expenseRed)),
                               ],
                             ),
                           ),

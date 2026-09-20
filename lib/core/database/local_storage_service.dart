@@ -193,6 +193,30 @@ class LocalStorageService {
     }
   }
 
+  Future<void> closeBook(String bookId) async {
+    final idx = _books.indexWhere((b) => b.id == bookId);
+    if (idx != -1) {
+      _books[idx] = _books[idx].copyWith(
+        isClosed: true,
+        closedAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+      await saveToFile();
+    }
+  }
+
+  Future<void> reopenBook(String bookId) async {
+    final idx = _books.indexWhere((b) => b.id == bookId);
+    if (idx != -1) {
+      _books[idx] = _books[idx].copyWith(
+        isClosed: false,
+        closedAt: null,
+        updatedAt: DateTime.now(),
+      );
+      await saveToFile();
+    }
+  }
+
   Future<void> purgeBook(String bookId) async {
     _books.removeWhere((b) => b.id == bookId);
     _transactions.removeWhere((t) => t.bookId == bookId);

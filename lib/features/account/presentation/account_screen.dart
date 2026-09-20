@@ -7,6 +7,7 @@ import '../../../core/services/biometric_service.dart';
 import '../../../core/services/google_drive_service.dart';
 import '../../../core/services/share_service.dart';
 import '../../book/cubit/book_cubit.dart';
+import '../../localization/cubit/locale_cubit.dart';
 import '../../theme/cubit/theme_cubit.dart';
 import '../../transaction/cubit/transaction_cubit.dart';
 
@@ -158,6 +159,53 @@ class _AccountScreenState extends State<AccountScreen> {
                 : null,
             onTap: () {
               cubit.setThemeMode(ThemeMode.system);
+              Navigator.pop(ctx);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showLanguageDialog() {
+    final currentLocale = context.read<LocaleCubit>().state.languageCode;
+    final cubit = context.read<LocaleCubit>();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: const Text('Pilih Bahasa / Language'),
+        children: [
+          ListTile(
+            leading: const Text('🇮🇩', style: TextStyle(fontSize: 24)),
+            title: const Text('Bahasa Indonesia'),
+            trailing: currentLocale == 'id'
+                ? const Icon(Icons.check_circle_rounded, color: AppColors.primary500)
+                : null,
+            onTap: () {
+              cubit.setLocale('id');
+              Navigator.pop(ctx);
+            },
+          ),
+          ListTile(
+            leading: const Text('🇺🇸', style: TextStyle(fontSize: 24)),
+            title: const Text('English'),
+            trailing: currentLocale == 'en'
+                ? const Icon(Icons.check_circle_rounded, color: AppColors.primary500)
+                : null,
+            onTap: () {
+              cubit.setLocale('en');
+              Navigator.pop(ctx);
+            },
+          ),
+          ListTile(
+            leading: const Text('🇪🇸', style: TextStyle(fontSize: 24)),
+            title: const Text('Español'),
+            trailing: currentLocale == 'es'
+                ? const Icon(Icons.check_circle_rounded, color: AppColors.primary500)
+                : null,
+            onTap: () {
+              cubit.setLocale('es');
               Navigator.pop(ctx);
             },
           ),
@@ -364,6 +412,21 @@ class _AccountScreenState extends State<AccountScreen> {
               ),
               child: Column(
                 children: [
+                  ListTile(
+                    leading: const Icon(Icons.language_rounded),
+                    title: const Text('Bahasa / Language'),
+                    subtitle: Text(
+                      context.watch<LocaleCubit>().state.languageCode == 'en'
+                          ? 'English'
+                          : (context.watch<LocaleCubit>().state.languageCode == 'es'
+                              ? 'Español'
+                              : 'Bahasa Indonesia'),
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                    trailing: const Icon(Icons.chevron_right_rounded),
+                    onTap: _showLanguageDialog,
+                  ),
+                  const Divider(height: 1),
                   ListTile(
                     leading: const Icon(Icons.dark_mode_outlined),
                     title: const Text('Tema Tampilan'),

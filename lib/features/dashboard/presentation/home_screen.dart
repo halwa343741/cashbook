@@ -190,36 +190,66 @@ class _HomeScreenState extends State<HomeScreen> {
                   const BookDropdownSelector(),
                   const SizedBox(height: 16),
 
-                  // Read-Only Banner if active book is read-only
+                  // Closed / Read-Only Banner if active book is closed or read-only
                   BlocBuilder<BookCubit, BookState>(
                     builder: (context, state) {
-                      if (state is BookLoaded && state.activeBook?.isReadOnly == true) {
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 16),
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                          decoration: BoxDecoration(
-                            color: AppColors.amber500.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: AppColors.amber500.withValues(alpha: 0.3)),
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(Icons.lock_outline_rounded,
-                                  color: AppColors.amber500, size: 20),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  'Buku ini bersifat Read-Only (Hanya Baca). Anda tidak dapat menambah atau mengubah transaksi.',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: isDark ? Colors.amber[200] : Colors.amber[900],
-                                    fontWeight: FontWeight.w500,
+                      if (state is BookLoaded) {
+                        final book = state.activeBook;
+                        if (book?.isClosed == true) {
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 16),
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: AppColors.expenseRed.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: AppColors.expenseRed.withValues(alpha: 0.3)),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.lock_rounded,
+                                    color: AppColors.expenseRed, size: 20),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    'Buku Kas ini telah Ditutup (Closed). Anda tidak dapat menambah transaksi baru kecuali buku dibuka kembali.',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: isDark ? Colors.red[200] : Colors.red[900],
+                                      fontWeight: FontWeight.w500,
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ],
-                          ),
-                        );
+                              ],
+                            ),
+                          );
+                        } else if (book?.isReadOnly == true) {
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 16),
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: AppColors.amber500.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: AppColors.amber500.withValues(alpha: 0.3)),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.visibility_rounded,
+                                    color: AppColors.amber500, size: 20),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    'Buku ini bersifat Read-Only (Hanya Baca). Anda tidak dapat menambah atau mengubah transaksi.',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: isDark ? Colors.amber[200] : Colors.amber[900],
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }
                       }
                       return const SizedBox.shrink();
                     },
@@ -405,6 +435,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     builder: (context, state) {
                       final isReadOnly =
                           state is BookLoaded && state.activeBook?.isReadOnly == true;
+                      final isClosed =
+                          state is BookLoaded && state.activeBook?.isClosed == true;
+                      final isLocked = isReadOnly || isClosed;
 
                       return Row(
                         children: [
@@ -414,8 +447,8 @@ class _HomeScreenState extends State<HomeScreen> {
                               icon: Icons.add_rounded,
                               bgColor: AppColors.incomeGreen.withValues(alpha: 0.12),
                               iconColor: AppColors.incomeGreen,
-                              onTap: isReadOnly
-                                  ? () => _showReadOnlyToast()
+                              onTap: isLocked
+                                  ? () => _showLockedToast(isClosed: isClosed)
                                   : () => context.push('/add-income'),
                             ),
                           ),
@@ -426,8 +459,8 @@ class _HomeScreenState extends State<HomeScreen> {
                               icon: Icons.remove_rounded,
                               bgColor: AppColors.expenseRed.withValues(alpha: 0.12),
                               iconColor: AppColors.expenseRed,
-                              onTap: isReadOnly
-                                  ? () => _showReadOnlyToast()
+                              onTap: isLocked
+                                  ? () => _showLockedToast(isClosed: isClosed)
                                   : () => context.push('/add-expense'),
                             ),
                           ),
@@ -542,11 +575,15 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void _showReadOnlyToast() {
+  void _showLockedToast({bool isClosed = false}) {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Buku ini Read-Only. Tidak dapat menambah transaksi.'),
-        backgroundColor: AppColors.amber500,
+      SnackBar(
+        content: Text(
+          isClosed
+              ? 'Buku ini telah Ditutup. Buka kembali buku untuk mencatat transaksi baru.'
+              : 'Buku ini Read-Only. Tidak dapat menambah transaksi.',
+        ),
+        backgroundColor: isClosed ? AppColors.expenseRed : AppColors.amber500,
       ),
     );
   }

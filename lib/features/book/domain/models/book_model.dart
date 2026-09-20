@@ -7,6 +7,8 @@ class BookModel {
   final double initialBalance;
   final bool isReadOnly;
   final String? sharedBy;
+  final bool isClosed;
+  final DateTime? closedAt;
   final DateTime createdAt;
   final DateTime updatedAt;
   final bool isDeleted;
@@ -22,6 +24,8 @@ class BookModel {
     this.initialBalance = 0.0,
     this.isReadOnly = false,
     this.sharedBy,
+    this.isClosed = false,
+    this.closedAt,
     required this.createdAt,
     DateTime? updatedAt,
     this.isDeleted = false,
@@ -45,6 +49,8 @@ class BookModel {
     double? initialBalance,
     bool? isReadOnly,
     String? sharedBy,
+    bool? isClosed,
+    DateTime? closedAt,
     DateTime? createdAt,
     DateTime? updatedAt,
     bool? isDeleted,
@@ -62,6 +68,8 @@ class BookModel {
       initialBalance: initialBalance ?? this.initialBalance,
       isReadOnly: isReadOnly ?? this.isReadOnly,
       sharedBy: sharedBy ?? this.sharedBy,
+      isClosed: isClosed ?? this.isClosed,
+      closedAt: closedAt ?? this.closedAt,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       isDeleted: isDeleted ?? this.isDeleted,
@@ -80,6 +88,8 @@ class BookModel {
       'initialBalance': initialBalance,
       'isReadOnly': isReadOnly,
       'sharedBy': sharedBy,
+      'isClosed': isClosed,
+      'closedAt': closedAt?.toIso8601String(),
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
       'isDeleted': isDeleted,
@@ -101,6 +111,10 @@ class BookModel {
       initialBalance: (json['initialBalance'] as num?)?.toDouble() ?? 0.0,
       isReadOnly: json['isReadOnly'] as bool? ?? false,
       sharedBy: json['sharedBy'] as String?,
+      isClosed: json['isClosed'] as bool? ?? false,
+      closedAt: json['closedAt'] != null
+          ? DateTime.parse(json['closedAt'] as String)
+          : null,
       createdAt: json['createdAt'] != null
           ? DateTime.parse(json['createdAt'] as String)
           : DateTime.now(),

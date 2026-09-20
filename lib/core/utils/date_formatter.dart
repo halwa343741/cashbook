@@ -1,41 +1,52 @@
 import 'package:intl/intl.dart';
 
 class DateFormatter {
-  static final DateFormat _dayMonthYear = DateFormat('dd MMM yyyy', 'id_ID');
-  static final DateFormat _dayMonthYearTime = DateFormat('dd MMM yyyy, HH:mm', 'id_ID');
-  static final DateFormat _monthYear = DateFormat('MMM yyyy', 'id_ID');
-  static final DateFormat _timeOnly = DateFormat('HH:mm', 'id_ID');
-
-  static String format(DateTime date) {
-    return _dayMonthYear.format(date);
+  static String _resolveLocale(String localeCode) {
+    if (localeCode == 'en') return 'en_US';
+    if (localeCode == 'es') return 'es_ES';
+    return 'id_ID';
   }
 
-  static String formatIndonesian(DateTime date) {
-    return _dayMonthYear.format(date);
+  static String format(DateTime date, [String localeCode = 'id']) {
+    final loc = _resolveLocale(localeCode);
+    return DateFormat('dd MMM yyyy', loc).format(date);
   }
 
-  static String formatWithTime(DateTime date) {
-    return _dayMonthYearTime.format(date);
+  static String formatIndonesian(DateTime date) => format(date, 'id');
+
+  static String formatWithTime(DateTime date, [String localeCode = 'id']) {
+    final loc = _resolveLocale(localeCode);
+    final timePattern = localeCode == 'en' ? 'dd MMM yyyy, hh:mm a' : 'dd MMM yyyy, HH:mm';
+    return DateFormat(timePattern, loc).format(date);
   }
 
-  static String formatMonthYear(DateTime date) {
-    return _monthYear.format(date);
+  static String formatMonthYear(DateTime date, [String localeCode = 'id']) {
+    final loc = _resolveLocale(localeCode);
+    return DateFormat('MMM yyyy', loc).format(date);
   }
 
-  static String formatTime(DateTime date) {
-    return _timeOnly.format(date);
+  static String formatTime(DateTime date, [String localeCode = 'id']) {
+    final loc = _resolveLocale(localeCode);
+    final pattern = localeCode == 'en' ? 'hh:mm a' : 'HH:mm';
+    return DateFormat(pattern, loc).format(date);
   }
 
-  static String formatGroupHeader(DateTime date) {
+  static String formatGroupHeader(DateTime date, [String localeCode = 'id']) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final target = DateTime(date.year, date.month, date.day);
 
+    final formatted = format(date, localeCode);
+
     if (target == today) {
-      return 'Hari Ini, ${_dayMonthYear.format(date)}';
+      if (localeCode == 'en') return 'Today, $formatted';
+      if (localeCode == 'es') return 'Hoy, $formatted';
+      return 'Hari Ini, $formatted';
     } else if (target == today.subtract(const Duration(days: 1))) {
-      return 'Kemarin, ${_dayMonthYear.format(date)}';
+      if (localeCode == 'en') return 'Yesterday, $formatted';
+      if (localeCode == 'es') return 'Ayer, $formatted';
+      return 'Kemarin, $formatted';
     }
-    return _dayMonthYear.format(date);
+    return formatted;
   }
 }
