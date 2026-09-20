@@ -46,12 +46,22 @@ class _LoginScreenState extends State<LoginScreen> {
         } else {
           context.go('/home');
         }
+      } else if (account == null && mounted) {
+        setState(() {
+          _errorMessage =
+              'Google Sign-In dibatalkan atau SHA-1 belum terdaftar di Google Cloud Console. Anda dapat memilih "Lanjutkan Offline" di bawah.';
+        });
       }
     } catch (e) {
       if (mounted) {
-        setState(() {
+        final errStr = e.toString();
+        if (errStr.contains('10') || errStr.contains('sign_in_failed') || errStr.contains('12500')) {
+          _errorMessage =
+              'Google Sign-In belum terhubung ke Google Cloud Console (SHA-1). Anda bisa langsung masuk dengan tombol "Lanjutkan Offline" di bawah.';
+        } else {
           _errorMessage = 'Gagal masuk dengan Google: $e';
-        });
+        }
+        setState(() {});
       }
     } finally {
       if (mounted) {
@@ -59,6 +69,15 @@ class _LoginScreenState extends State<LoginScreen> {
           _isLoading = false;
         });
       }
+    }
+  }
+
+  void _handleContinueOffline() {
+    final books = widget.storage.getBooks();
+    if (books.isEmpty) {
+      context.go('/create-initial-book');
+    } else {
+      context.go('/home');
     }
   }
 
@@ -193,6 +212,32 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ],
                         ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              // Continue Offline / Local Mode Button
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: OutlinedButton.icon(
+                  onPressed: _isLoading ? null : _handleContinueOffline,
+                  icon: const Icon(Icons.offline_pin_outlined, size: 20),
+                  label: const Text(
+                    'Lanjutkan Offline (Mode Lokal)',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: isDark ? Colors.white : AppColors.primary,
+                    side: BorderSide(
+                      color: isDark ? AppColors.gray700 : AppColors.primary.withValues(alpha: 0.4),
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(height: 20),

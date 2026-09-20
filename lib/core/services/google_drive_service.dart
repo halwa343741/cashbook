@@ -30,7 +30,8 @@ class GoogleDriveService {
       _currentUser = account;
       return account;
     } catch (e) {
-      return null;
+      // Re-throw so caller can display the specific error (e.g. Developer Error / SHA-1)
+      rethrow;
     }
   }
 
