@@ -58,7 +58,6 @@ function Get-SavedDevices {
             return @(ConvertFrom-Json $content)
         } catch {}
     }
-    # Default preset jika belum ada file
     $defaultList = @(
         [PSCustomObject]@{
             name = "Samsung Galaxy A07"
@@ -89,6 +88,61 @@ function Resolve-DeviceIp([string]$rawInput, [string]$fallbackOctet = "26") {
     return "$subnetPrefix$cleanOctet"
 }
 
+# 4. Auto-Discovery Perangkat di Jaringan (mDNS + Saved Devices)
+function Discover-NetworkDevices {
+    $foundList = @()
+    $savedDevs = Get-SavedDevices
+    
+    # 4a. Pindai via ADB mDNS services (Otomatis mendeteksi IP & Port HP aktif di Wi-Fi)
+    $mdnsRaw = adb mdns services 2>$null
+    if ($mdnsRaw) {
+        foreach ($line in $mdnsRaw) {
+            # Format: <instance_name>\t<service_name>\t<ip:port>
+            if ($line -match "([^\s]+)\s+(_adb[^\s]+)\s+([0-9\.]+):(\d+)") {
+                $mIp = $matches[3]
+                $mPort = $matches[4]
+                $addr = "$mIp`:$mPort"
+                
+                # Cek apakah sudah ada di list hasil scan
+                if (-not ($foundList | Where-Object { $_.Ip -eq $mIp })) {
+                    # Cari nama dari saved devices jika ada
+                    $matchedSaved = $savedDevs | Where-Object { $_.ip -eq $mIp }
+                    $friendlyName = if ($matchedSaved) { $matchedSaved.name } else { "Android Device ($mIp)" }
+                    
+                    # Update port di saved devices jika portnya berubah
+                    if ($matchedSaved -and $matchedSaved.port -ne $mPort) {
+                        $matchedSaved.port = $mPort
+                        Save-Devices $savedDevs
+                    }
+                    
+                    $foundList += [PSCustomObject]@{
+                        Name = $friendlyName
+                        Ip = $mIp
+                        Port = $mPort
+                        Address = $addr
+                        Status = "Terdeteksi Otomatis di Wi-Fi"
+                    }
+                }
+            }
+        }
+    }
+    
+    # 4b. Tambahkan perangkat dari devices.json jika belum terdeteksi lewat mDNS
+    foreach ($sd in $savedDevs) {
+        if (-not ($foundList | Where-Object { $_.Ip -eq $sd.ip })) {
+            $foundList += [PSCustomObject]@{
+                Name = $sd.name
+                Ip = $sd.ip
+                Port = $sd.port
+                Address = "$($sd.ip):$($sd.port)"
+                Status = "Tersimpan di devices.json"
+            }
+        }
+    }
+    
+    return $foundList
+}
+
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "       CASHBOOK APP RUNNER              " -ForegroundColor Green
 Write-Host "========================================" -ForegroundColor Cyan
@@ -97,7 +151,7 @@ if (-not [string]::IsNullOrWhiteSpace($computerIp)) {
     Write-Host "[i] Subnet Jaringan : $subnetPrefix*" -ForegroundColor DarkGray
 }
 
-# 4. Clean jika diminta
+# 5. Clean jika diminta
 if ($Clean) {
     Write-Host "`n[*] Membersihkan cache build (flutter clean)..." -ForegroundColor Yellow
     flutter clean
@@ -105,7 +159,7 @@ if ($Clean) {
     flutter pub get
 }
 
-# 5. Mode Pairing Wi-Fi Debugging
+# 6. Mode Pairing Wi-Fi Debugging
 if ($Pair) {
     Write-Host "`n--- Wi-Fi ADB Pairing ---" -ForegroundColor Magenta
     $inputOctet = Read-Host "Masukkan angka terakhir IP HP ($subnetPrefix[xxx]) atau full IP [26]"
@@ -123,8 +177,8 @@ if ($Pair) {
     }
 }
 
-# 6. Cek Perangkat yang Sedang Aktif di ADB
-Write-Host "`n[*] Memeriksa koneksi ADB yang aktif..." -ForegroundColor Gray
+# 7. Cek Perangkat yang Sedang Aktif di ADB
+Write-Host "`n[*] Memeriksa koneksi ADB..." -ForegroundColor Gray
 $attachedDevices = @()
 $adbOutput = adb devices -l 2>$null
 if ($adbOutput) {
@@ -137,60 +191,41 @@ if ($adbOutput) {
     }
 }
 
-# 7. Pemilihan Target Device
+# 8. Tentukan Target Device
 $targetDevice = $Device
 
-# Jika Device dipassing angka 1, 2, dll -> ambil dari devices.json
+# Jika Device dipassing nomor index (misal: .\run.ps1 -Device 1)
 if ($targetDevice -match "^\d+$") {
-    $savedDevs = Get-SavedDevices
+    $devList = Discover-NetworkDevices
     $idx = [int]$targetDevice - 1
-    if ($idx -ge 0 -and $idx -lt $savedDevs.Count) {
-        $d = $savedDevs[$idx]
-        $p = if (-not [string]::IsNullOrWhiteSpace($Port)) { $Port } else { $d.port }
-        $targetDevice = "$($d.ip):$p"
-        Write-Host "[*] Menghubungkan ke $($d.name) ($targetDevice)..." -ForegroundColor Cyan
+    if ($idx -ge 0 -and $idx -lt $devList.Count) {
+        $d = $devList[$idx]
+        $p = if (-not [string]::IsNullOrWhiteSpace($Port)) { $Port } else { $d.Port }
+        $targetDevice = "$($d.Ip):$p"
+        Write-Host "[*] Menghubungkan ke $($d.Name) ($targetDevice)..." -ForegroundColor Cyan
         adb connect $targetDevice
     }
 }
 
+# Jika belum ada target, tampilkan daftar perangkat otomatis dari jaringan
 if ([string]::IsNullOrWhiteSpace($targetDevice)) {
-    # Jika sudah ada perangkat ADB yang terhubung langsung
-    if ($attachedDevices.Count -ge 1) {
-        Write-Host "`n[+] Terdeteksi $($attachedDevices.Count) perangkat ADB aktif:" -ForegroundColor Green
-        for ($i = 0; $i -lt $attachedDevices.Count; $i++) {
-            Write-Host "  [$($i + 1)] $($attachedDevices[$i].Id) ($($attachedDevices[$i].Info))" -ForegroundColor Green
-        }
-        
-        if ($attachedDevices.Count -eq 1) {
-            $confirm = Read-Host "Langsung jalankan di $($attachedDevices[0].Id)? (Y/n)"
-            if ([string]::IsNullOrWhiteSpace($confirm) -or $confirm -match "^[Yy]") {
-                $targetDevice = $attachedDevices[0].Id
-            }
-        } else {
-            $pilihan = Read-Host "Pilih nomor perangkat (1-$($attachedDevices.Count)) [1]"
-            $selectedIdx = if ([string]::IsNullOrWhiteSpace($pilihan)) { 0 } else { [int]$pilihan - 1 }
-            if ($selectedIdx -ge 0 -and $selectedIdx -lt $attachedDevices.Count) {
-                $targetDevice = $attachedDevices[$selectedIdx].Id
-            }
-        }
-    }
-}
-
-# Jika belum ada targetDevice yang dipilih, tampilkan Menu Utama dengan List Device
-if ([string]::IsNullOrWhiteSpace($targetDevice)) {
-    $savedDevices = Get-SavedDevices
+    Write-Host "[*] Memindai perangkat Android di jaringan Wi-Fi lokal..." -ForegroundColor Gray
+    $availableDevices = Discover-NetworkDevices
     
     Write-Host "`n========================================" -ForegroundColor Yellow
     Write-Host "        PILIH TARGET PERANGKAT          " -ForegroundColor Yellow
     Write-Host "========================================" -ForegroundColor Yellow
     
-    Write-Host "Daftar Perangkat Android Tersimpan (Wi-Fi):" -ForegroundColor Cyan
-    for ($i = 0; $i -lt $savedDevices.Count; $i++) {
-        $sd = $savedDevices[$i]
-        Write-Host "  [$($i + 1)] $($sd.name) - $($sd.ip):$($sd.port)" -ForegroundColor White
+    Write-Host "Perangkat Android di Jaringan (Wi-Fi):" -ForegroundColor Cyan
+    for ($i = 0; $i -lt $availableDevices.Count; $i++) {
+        $dev = $availableDevices[$i]
+        $statusTag = if ($dev.Status -match "Otomatis") { "[Online]" } else { "[Offline/Tersimpan]" }
+        $color = if ($dev.Status -match "Otomatis") { "Green" } else { "White" }
+        Write-Host "  [$($i + 1)] $($dev.Name) - $($dev.Address) $statusTag" -ForegroundColor $color
     }
-    $newIdx = $savedDevices.Count + 1
-    Write-Host "  [$newIdx] + Tambah Perangkat Android Baru" -ForegroundColor Magenta
+    
+    $newIdx = $availableDevices.Count + 1
+    Write-Host "  [$newIdx] + Input IP Manual / Tambah Perangkat" -ForegroundColor Magenta
     
     Write-Host "`nTarget Platform Lain:" -ForegroundColor Gray
     Write-Host "  [W] Windows Desktop" -ForegroundColor White
@@ -209,26 +244,26 @@ if ([string]::IsNullOrWhiteSpace($targetDevice)) {
         }
         "^\d+$" {
             $selectedNum = [int]$pilihan
-            if ($selectedNum -le $savedDevices.Count) {
-                # Memilih dari list tersimpan
-                $chosen = $savedDevices[$selectedNum - 1]
-                Write-Host "`n--> Memilih: $($chosen.name) ($($chosen.ip))" -ForegroundColor Green
+            if ($selectedNum -le $availableDevices.Count) {
+                $chosen = $availableDevices[$selectedNum - 1]
+                Write-Host "`n--> Memilih: $($chosen.Name) ($($chosen.Address))" -ForegroundColor Green
                 
-                $inputPort = Read-Host "Masukkan Port Wireless Debugging [$($chosen.port)] (Enter jika sama)"
-                $activePort = if ([string]::IsNullOrWhiteSpace($inputPort)) { $chosen.port } else { $inputPort.Trim() }
+                # Jika port sudah terdeteksi otomatis via mDNS, tanyakan konfirmasi / langsung pakai
+                $inputPort = Read-Host "Port Wireless Debugging [$($chosen.Port)] (Enter untuk pakai)"
+                $activePort = if ([string]::IsNullOrWhiteSpace($inputPort)) { $chosen.Port } else { $inputPort.Trim() }
                 
-                # Update port jika berubah agar diingat
-                if ($activePort -ne $chosen.port) {
-                    $chosen.port = $activePort
-                    Save-Devices $savedDevices
-                    Write-Host "[i] Port baru ($activePort) disimpan ke daftar." -ForegroundColor DarkGray
+                # Perbarui port jika ada perubahan
+                $savedDevs = Get-SavedDevices
+                $matchedInSaved = $savedDevs | Where-Object { $_.ip -eq $chosen.Ip }
+                if ($matchedInSaved -and $matchedInSaved.port -ne $activePort) {
+                    $matchedInSaved.port = $activePort
+                    Save-Devices $savedDevs
                 }
                 
-                $targetDevice = "$($chosen.ip):$activePort"
+                $targetDevice = "$($chosen.Ip):$activePort"
                 Write-Host "[*] Menghubungkan ADB ke $targetDevice..." -ForegroundColor Cyan
                 adb connect $targetDevice
             } elseif ($selectedNum -eq $newIdx) {
-                # Tambah perangkat baru
                 Write-Host "`n--- Tambah Perangkat Android Baru ---" -ForegroundColor Magenta
                 $newName = Read-Host "Nama Perangkat (misal: Samsung A07 Baru)"
                 if ([string]::IsNullOrWhiteSpace($newName)) { $newName = "Android Device" }
@@ -240,12 +275,13 @@ if ([string]::IsNullOrWhiteSpace($targetDevice)) {
                 if ([string]::IsNullOrWhiteSpace($newPort)) { $newPort = "44557" }
                 
                 # Simpan ke daftar
-                $savedDevices += [PSCustomObject]@{
+                $savedDevs = Get-SavedDevices
+                $savedDevs += [PSCustomObject]@{
                     name = $newName
                     ip = $newIp
                     port = $newPort
                 }
-                Save-Devices $savedDevices
+                Save-Devices $savedDevs
                 Write-Host "[+] Perangkat '$newName' ($newIp`:$newPort) berhasil disimpan!" -ForegroundColor Green
                 
                 $targetDevice = "$newIp`:$newPort"
@@ -256,7 +292,7 @@ if ([string]::IsNullOrWhiteSpace($targetDevice)) {
     }
 }
 
-# 8. Eksekusi flutter run
+# 9. Eksekusi flutter run
 $runArgs = @("run")
 if (-not [string]::IsNullOrWhiteSpace($targetDevice)) {
     $runArgs += @("-d", $targetDevice)
