@@ -1,0 +1,68 @@
+<svg width="390" height="844" viewBox="0 0 390 844" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="390" height="844" rx="44" fill="#FAFCFB"/>
+  
+  <!-- Status Bar -->
+  <g color="#1E293B">
+  <g id="Status-Bar">
+    <text x="32" y="36" font-family="-apple-system, Inter, Roboto, sans-serif" font-size="14" font-weight="600" fill="currentColor">9:41</text>
+    <g transform="translate(325, 25)" fill="currentColor">
+      <!-- Wifi & Battery & Signal -->
+      <path d="M12 3c-4.97 0-9 4.03-9 9 0 2.12.74 4.07 1.97 5.61L12 22l7.03-4.39C20.26 16.07 21 14.12 21 12c0-4.97-4.03-9-9-9z" opacity="0.3" transform="scale(0.6) translate(-10, -5)"/>
+      <rect x="18" y="3" width="20" height="10" rx="3" fill="none" stroke="currentColor" stroke-width="2"/>
+      <rect x="20" y="5" width="13" height="6" rx="1.5" fill="currentColor"/>
+      <path d="M39 6v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    </g>
+  </g>
+</g>
+  
+  <!-- Logo & Heading -->
+  <g id="Logo" transform="translate(155, 140)">
+    <rect width="80" height="60" rx="16" fill="#16A34A"/>
+    <path d="M58 24H68V38H58C54.6863 38 52 35.3137 52 31C52 26.6863 54.6863 24 58 24Z" fill="#FFFFFF"/>
+    <circle cx="59" cy="31" r="2.5" fill="#16A34A"/>
+    <path d="M18 16C18 12.6863 20.6863 10 24 10H62C65.3137 10 68 12.6863 68 16V20H22C19.7909 20 18 18.2091 18 16Z" fill="#86EFAC"/>
+  </g>
+  
+  <text x="195" y="245" font-family="-apple-system, Inter, sans-serif" font-size="26" font-weight="700" fill="#0F172A" text-anchor="middle">Cashbook</text>
+  <text x="195" y="272" font-family="-apple-system, Inter, sans-serif" font-size="14" font-weight="400" fill="#64748B" text-anchor="middle">Kelola keuangan, capai tujuanmu</text>
+  
+  <!-- Buttons -->
+  <!-- Masuk -->
+  <rect x="24" y="325" width="342" height="48" rx="12" fill="#15803D"/>
+  <text x="195" y="355" font-family="-apple-system, Inter, sans-serif" font-size="15" font-weight="600" fill="#FFFFFF" text-anchor="middle">Masuk</text>
+  
+  <!-- Daftar -->
+  <rect x="24" y="385" width="342" height="48" rx="12" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.5"/>
+  <text x="195" y="415" font-family="-apple-system, Inter, sans-serif" font-size="15" font-weight="600" fill="#15803D" text-anchor="middle">Daftar</text>
+  
+  <text x="195" y="468" font-family="-apple-system, Inter, sans-serif" font-size="13" font-weight="400" fill="#94A3B8" text-anchor="middle">atau</text>
+  
+  <!-- Google Sign In -->
+  <rect x="24" y="490" width="342" height="48" rx="12" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.5"/>
+  <g transform="translate(108, 504)">
+    <path d="M10 4.5c2.4 0 4 1 5 1.9l3.5-3.5C16.4 1 13.5 0 10 0 6.1 0 2.8 2.2 1.1 5.4l4.1 3.2C6.2 6.1 7.9 4.5 10 4.5z" fill="#EA4335"/>
+    <path d="M19.6 10.2c0-.7-.1-1.4-.2-2.1H10v4.2h5.5c-.3 1.3-1.1 2.5-2.2 3.2l3.4 2.7c2-1.9 3.1-4.7 3.1-7.8z" fill="#4285F4"/>
+    <path d="M5.2 11.4c-.2-.7-.3-1.5-.3-2.3s.1-1.6.3-2.3L1.1 3.6C.4 5 0 6.5 0 8.1s.4 3.1 1.1 4.5l4.1-3.2z" fill="#FBBC05"/>
+    <path d="M10 19.5c2.7 0 5-1 6.7-2.6l-3.4-2.7c-.9.6-2.1 1-3.3 1-2.1 0-3.8-1.5-4.5-3.5L1.4 15C3.1 18.2 6.3 19.5 10 19.5z" fill="#34A853"/>
+  </g>
+  <text x="200" y="520" font-family="-apple-system, Inter, sans-serif" font-size="14" font-weight="500" fill="#1E293B" text-anchor="middle">Lanjut dengan Google</text>
+  
+  <!-- Illustration (Potted plant & wallet) -->
+  <g transform="translate(145, 620)">
+    <ellipse cx="50" cy="80" rx="60" ry="14" fill="#F0FDF4"/>
+    <path d="M30 65l4 25h16l4-25z" fill="#86EFAC"/>
+    <path d="M34 50c0-10 6-18 6-18s6 8 6 18c0 5-3 10-6 10s-6-5-6-10z" fill="#22C55E"/>
+    <path d="M22 55c-6-8-4-16-4-16s8 4 12 10c3 4 2 8 0 10s-5 0-8-4z" fill="#16A34A"/>
+    <!-- Wallet mini -->
+    <rect x="52" y="60" width="42" height="30" rx="8" fill="#166534"/>
+    <rect x="74" y="68" width="18" height="14" rx="4" fill="#22C55E"/>
+    <circle cx="80" cy="75" r="2" fill="#FFFFFF"/>
+  </g>
+  
+  
+  <g id="Home-Indicator">
+    <rect x="130" y="828" width="130" height="4" rx="2" fill="#CBD5E1"/>
+  </g>
+
+</svg>

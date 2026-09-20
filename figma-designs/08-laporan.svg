@@ -1,0 +1,145 @@
+<svg width="390" height="844" viewBox="0 0 390 844" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="390" height="844" rx="44" fill="#F8FAFC"/>
+  <g color="#1E293B">
+  <g id="Status-Bar">
+    <text x="32" y="36" font-family="-apple-system, Inter, Roboto, sans-serif" font-size="14" font-weight="600" fill="currentColor">9:41</text>
+    <g transform="translate(325, 25)" fill="currentColor">
+      <!-- Wifi & Battery & Signal -->
+      <path d="M12 3c-4.97 0-9 4.03-9 9 0 2.12.74 4.07 1.97 5.61L12 22l7.03-4.39C20.26 16.07 21 14.12 21 12c0-4.97-4.03-9-9-9z" opacity="0.3" transform="scale(0.6) translate(-10, -5)"/>
+      <rect x="18" y="3" width="20" height="10" rx="3" fill="none" stroke="currentColor" stroke-width="2"/>
+      <rect x="20" y="5" width="13" height="6" rx="1.5" fill="currentColor"/>
+      <path d="M39 6v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    </g>
+  </g>
+</g>
+  
+  <!-- Header -->
+  <g transform="translate(20, 60)">
+    <text x="0" y="18" font-family="-apple-system, Inter, sans-serif" font-size="20" font-weight="700" fill="#0F172A">Laporan</text>
+  </g>
+  
+  <!-- Tabs -->
+  <g transform="translate(20, 100)">
+    <rect x="0" y="0" width="90" height="34" rx="17" fill="#15803D"/>
+    <text x="45" y="21" font-family="-apple-system, Inter, sans-serif" font-size="13" font-weight="600" fill="#FFFFFF" text-anchor="middle">Bulan ini</text>
+    
+    <rect x="98" y="0" width="90" height="34" rx="17" fill="#FFFFFF" stroke="#E2E8F0"/>
+    <text x="143" y="21" font-family="-apple-system, Inter, sans-serif" font-size="13" font-weight="500" fill="#64748B" text-anchor="middle">Tahun ini</text>
+    
+    <rect x="196" y="0" width="90" height="34" rx="17" fill="#FFFFFF" stroke="#E2E8F0"/>
+    <text x="241" y="21" font-family="-apple-system, Inter, sans-serif" font-size="13" font-weight="500" fill="#64748B" text-anchor="middle">Custom</text>
+  </g>
+  
+  <!-- Card Ringkasan -->
+  <g transform="translate(20, 155)">
+    <rect width="350" height="135" rx="16" fill="#FFFFFF" stroke="#F1F5F9"/>
+    <text x="16" y="26" font-family="-apple-system, Inter, sans-serif" font-size="14" font-weight="600" fill="#0F172A">Ringkasan</text>
+    
+    <circle cx="28" cy="54" r="10" fill="#DCFCE7"/>
+    <path d="M28 58v-8m-3 3l3-3 3 3" stroke="#16A34A" stroke-width="1.5"/>
+    <text x="46" y="58" font-family="-apple-system, Inter, sans-serif" font-size="13" font-weight="500" fill="#475569">Pemasukan</text>
+    <text x="334" y="58" font-family="-apple-system, Inter, sans-serif" font-size="13" font-weight="600" fill="#16A34A" text-anchor="end">Rp 8.750.000</text>
+    
+    <circle cx="28" cy="84" r="10" fill="#FEE2E2"/>
+    <path d="M28 80v8m-3-3l3 3 3-3" stroke="#EF4444" stroke-width="1.5"/>
+    <text x="46" y="88" font-family="-apple-system, Inter, sans-serif" font-size="13" font-weight="500" fill="#475569">Pengeluaran</text>
+    <text x="334" y="88" font-family="-apple-system, Inter, sans-serif" font-size="13" font-weight="600" fill="#EF4444" text-anchor="end">Rp 3.500.000</text>
+    
+    <text x="16" y="118" font-family="-apple-system, Inter, sans-serif" font-size="13" font-weight="600" fill="#0F172A">Selisih</text>
+    <text x="334" y="118" font-family="-apple-system, Inter, sans-serif" font-size="13" font-weight="700" fill="#0F172A" text-anchor="end">Rp 5.250.000</text>
+  </g>
+  
+  <!-- Grafik Keuangan Bar Chart -->
+  <g transform="translate(20, 310)">
+    <rect width="350" height="230" rx="16" fill="#FFFFFF" stroke="#F1F5F9"/>
+    <text x="16" y="28" font-family="-apple-system, Inter, sans-serif" font-size="14" font-weight="600" fill="#0F172A">Grafik Keuangan</text>
+    
+    <!-- Legend -->
+    <circle cx="24" cy="50" r="4" fill="#10B981"/>
+    <text x="34" y="53" font-family="-apple-system, Inter, sans-serif" font-size="11" font-weight="500" fill="#64748B">Pemasukan</text>
+    <circle cx="104" cy="50" r="4" fill="#EF4444"/>
+    <text x="114" y="53" font-family="-apple-system, Inter, sans-serif" font-size="11" font-weight="500" fill="#64748B">Pengeluaran</text>
+    
+    <!-- Chart Grid Lines -->
+    <g transform="translate(30, 80)">
+      <text x="0" y="0" font-family="-apple-system, Inter, sans-serif" font-size="10" font-weight="400" fill="#94A3B8">8jt</text>
+      <line x1="20" y1="-3" x2="300" y2="-3" stroke="#F1F5F9"/>
+      
+      <text x="0" y="30" font-family="-apple-system, Inter, sans-serif" font-size="10" font-weight="400" fill="#94A3B8">6jt</text>
+      <line x1="20" y1="27" x2="300" y2="27" stroke="#F1F5F9"/>
+      
+      <text x="0" y="60" font-family="-apple-system, Inter, sans-serif" font-size="10" font-weight="400" fill="#94A3B8">4jt</text>
+      <line x1="20" y1="57" x2="300" y2="57" stroke="#F1F5F9"/>
+      
+      <text x="0" y="90" font-family="-apple-system, Inter, sans-serif" font-size="10" font-weight="400" fill="#94A3B8">2jt</text>
+      <line x1="20" y1="87" x2="300" y2="87" stroke="#F1F5F9"/>
+      
+      <text x="0" y="115" font-family="-apple-system, Inter, sans-serif" font-size="10" font-weight="400" fill="#94A3B8">0</text>
+      <line x1="20" y1="112" x2="300" y2="112" stroke="#E2E8F0"/>
+      
+      <!-- Bars -->
+      <!-- Day 1 -->
+      <rect x="40" y="70" width="8" height="42" rx="2" fill="#10B981"/>
+      <rect x="50" y="90" width="8" height="22" rx="2" fill="#EF4444"/>
+      <text x="49" y="128" font-family="-apple-system, Inter, sans-serif" font-size="10" fill="#94A3B8" text-anchor="middle">1</text>
+      
+      <!-- Day 5 -->
+      <rect x="85" y="25" width="8" height="87" rx="2" fill="#10B981"/>
+      <rect x="95" y="75" width="8" height="37" rx="2" fill="#EF4444"/>
+      <text x="94" y="128" font-family="-apple-system, Inter, sans-serif" font-size="10" fill="#94A3B8" text-anchor="middle">5</text>
+      
+      <!-- Day 10 -->
+      <rect x="130" y="60" width="8" height="52" rx="2" fill="#10B981"/>
+      <rect x="140" y="45" width="8" height="67" rx="2" fill="#EF4444"/>
+      <text x="139" y="128" font-family="-apple-system, Inter, sans-serif" font-size="10" fill="#94A3B8" text-anchor="middle">10</text>
+      
+      <!-- Day 15 -->
+      <rect x="175" y="50" width="8" height="62" rx="2" fill="#10B981"/>
+      <rect x="185" y="65" width="8" height="47" rx="2" fill="#EF4444"/>
+      <text x="184" y="128" font-family="-apple-system, Inter, sans-serif" font-size="10" fill="#94A3B8" text-anchor="middle">15</text>
+      
+      <!-- Day 20 -->
+      <rect x="220" y="40" width="8" height="72" rx="2" fill="#10B981"/>
+      <rect x="230" y="80" width="8" height="32" rx="2" fill="#EF4444"/>
+      <text x="229" y="128" font-family="-apple-system, Inter, sans-serif" font-size="10" fill="#94A3B8" text-anchor="middle">20</text>
+      
+      <!-- Day 25 -->
+      <rect x="265" y="55" width="8" height="57" rx="2" fill="#10B981"/>
+      <rect x="275" y="60" width="8" height="52" rx="2" fill="#EF4444"/>
+      <text x="274" y="128" font-family="-apple-system, Inter, sans-serif" font-size="10" fill="#94A3B8" text-anchor="middle">25</text>
+    </g>
+  </g>
+  
+  
+    <g id="Bottom-Navigation">
+      <rect x="0" y="750" width="390" height="94" fill="#FFFFFF" filter="drop-shadow(0px -4px 12px rgba(0,0,0,0.04))"/>
+      <line x1="0" y1="750" x2="390" y2="750" stroke="#F1F5F9" stroke-width="1"/>
+      
+      <g id="Nav-Beranda" transform="translate(48, 765)" style="cursor: pointer;">
+        <path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" fill="none" stroke="#94A3B8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" transform="translate(-10, -5) scale(0.9)"/>
+        <text x="0" y="22" font-family="-apple-system, Inter, sans-serif" font-size="11" font-weight="500" fill="#94A3B8" text-anchor="middle">Beranda</text>
+      </g>
+    
+      <g id="Nav-Transaksi" transform="translate(144, 765)" style="cursor: pointer;">
+        <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" fill="none" stroke="#94A3B8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" transform="translate(-10, -5) scale(0.9)"/>
+        <text x="0" y="22" font-family="-apple-system, Inter, sans-serif" font-size="11" font-weight="500" fill="#94A3B8" text-anchor="middle">Transaksi</text>
+      </g>
+    
+      <g id="Nav-Laporan" transform="translate(240, 765)" style="cursor: pointer;">
+        <path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" fill="none" stroke="#107548" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" transform="translate(-10, -5) scale(0.9)"/>
+        <text x="0" y="22" font-family="-apple-system, Inter, sans-serif" font-size="11" font-weight="600" fill="#107548" text-anchor="middle">Laporan</text>
+      </g>
+    
+      <g id="Nav-Akun" transform="translate(336, 765)" style="cursor: pointer;">
+        <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" fill="none" stroke="#94A3B8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" transform="translate(-10, -5) scale(0.9)"/>
+        <text x="0" y="22" font-family="-apple-system, Inter, sans-serif" font-size="11" font-weight="500" fill="#94A3B8" text-anchor="middle">Akun</text>
+      </g>
+    
+      
+  <g id="Home-Indicator">
+    <rect x="130" y="828" width="130" height="4" rx="2" fill="#CBD5E1"/>
+  </g>
+
+    </g>
+  
+</svg>

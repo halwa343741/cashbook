@@ -1,0 +1,127 @@
+<svg width="390" height="844" viewBox="0 0 390 844" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="390" height="844" rx="44" fill="#FAFCFB"/>
+  <g color="#1E293B">
+  <g id="Status-Bar">
+    <text x="32" y="36" font-family="-apple-system, Inter, Roboto, sans-serif" font-size="14" font-weight="600" fill="currentColor">9:41</text>
+    <g transform="translate(325, 25)" fill="currentColor">
+      <!-- Wifi & Battery & Signal -->
+      <path d="M12 3c-4.97 0-9 4.03-9 9 0 2.12.74 4.07 1.97 5.61L12 22l7.03-4.39C20.26 16.07 21 14.12 21 12c0-4.97-4.03-9-9-9z" opacity="0.3" transform="scale(0.6) translate(-10, -5)"/>
+      <rect x="18" y="3" width="20" height="10" rx="3" fill="none" stroke="currentColor" stroke-width="2"/>
+      <rect x="20" y="5" width="13" height="6" rx="1.5" fill="currentColor"/>
+      <path d="M39 6v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    </g>
+  </g>
+</g>
+  
+  <!-- Header -->
+  <g transform="translate(20, 60)">
+    <text x="0" y="18" font-family="-apple-system, Inter, sans-serif" font-size="20" font-weight="700" fill="#0F172A">Akun</text>
+  </g>
+  
+  <!-- User Profile Card -->
+  <g transform="translate(24, 105)">
+    <circle cx="30" cy="30" r="28" fill="#94A3B8"/>
+    <!-- Avatar head/body -->
+    <circle cx="30" cy="24" r="9" fill="#FFFFFF"/>
+    <path d="M16 48c0-8 6-12 14-12s14 4 14 12" fill="#FFFFFF"/>
+    
+    <text x="70" y="26" font-family="-apple-system, Inter, sans-serif" font-size="16" font-weight="600" fill="#0F172A">Andi Pratama</text>
+    <text x="70" y="46" font-family="-apple-system, Inter, sans-serif" font-size="13" font-weight="400" fill="#64748B">andi@example.com</text>
+  </g>
+  
+  <!-- Menu Items -->
+  <g transform="translate(24, 185)">
+    
+      <g transform="translate(0, 0)">
+        <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0z" stroke="#475569" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round" transform="translate(0, 5) scale(0.9)"/>
+        <text x="36" y="23" font-family="-apple-system, Inter, sans-serif" font-size="14" font-weight="500" fill="#1E293B">Profil</text>
+        
+        
+        <path d="M330 16l4 4-4 4" stroke="#CBD5E1" stroke-width="2" stroke-linecap="round"/>
+        <line x1="36" y1="46" x2="342" y2="46" stroke="#F1F5F9" stroke-width="1"/>
+      </g>
+    
+      <g transform="translate(0, 54)">
+        <path d="M10 12h12v8H10z" stroke="#475569" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round" transform="translate(0, 5) scale(0.9)"/>
+        <text x="36" y="23" font-family="-apple-system, Inter, sans-serif" font-size="14" font-weight="500" fill="#1E293B">Kelola Akun</text>
+        
+        
+        <path d="M330 16l4 4-4 4" stroke="#CBD5E1" stroke-width="2" stroke-linecap="round"/>
+        <line x1="36" y1="46" x2="342" y2="46" stroke="#F1F5F9" stroke-width="1"/>
+      </g>
+    
+      <g transform="translate(0, 108)">
+        <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" stroke="#475569" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round" transform="translate(0, 5) scale(0.9)"/>
+        <text x="36" y="18" font-family="-apple-system, Inter, sans-serif" font-size="14" font-weight="500" fill="#1E293B">Sinkronisasi</text>
+        <text x="36" y="34" font-family="-apple-system, Inter, sans-serif" font-size="11" font-weight="400" fill="#94A3B8">Terakhir: 12 Okt 2025, 09:10</text>
+        
+        <path d="M330 16l4 4-4 4" stroke="#CBD5E1" stroke-width="2" stroke-linecap="round"/>
+        <line x1="36" y1="46" x2="342" y2="46" stroke="#F1F5F9" stroke-width="1"/>
+      </g>
+    
+      <g transform="translate(0, 162)">
+        <path d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" stroke="#475569" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round" transform="translate(0, 5) scale(0.9)"/>
+        <text x="36" y="23" font-family="-apple-system, Inter, sans-serif" font-size="14" font-weight="500" fill="#1E293B">Tema</text>
+        
+        <text x="310" y="23" font-family="-apple-system, Inter, sans-serif" font-size="12" font-weight="400" fill="#94A3B8" text-anchor="end">Terang</text>
+        <path d="M330 16l4 4-4 4" stroke="#CBD5E1" stroke-width="2" stroke-linecap="round"/>
+        <line x1="36" y1="46" x2="342" y2="46" stroke="#F1F5F9" stroke-width="1"/>
+      </g>
+    
+      <g transform="translate(0, 216)">
+        <path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5" stroke="#475569" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round" transform="translate(0, 5) scale(0.9)"/>
+        <text x="36" y="23" font-family="-apple-system, Inter, sans-serif" font-size="14" font-weight="500" fill="#1E293B">Notifikasi</text>
+        
+        
+        <path d="M330 16l4 4-4 4" stroke="#CBD5E1" stroke-width="2" stroke-linecap="round"/>
+        <line x1="36" y1="46" x2="342" y2="46" stroke="#F1F5F9" stroke-width="1"/>
+      </g>
+    
+      <g transform="translate(0, 270)">
+        <path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke="#475569" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round" transform="translate(0, 5) scale(0.9)"/>
+        <text x="36" y="23" font-family="-apple-system, Inter, sans-serif" font-size="14" font-weight="500" fill="#1E293B">Tentang Cashbook</text>
+        
+        
+        <path d="M330 16l4 4-4 4" stroke="#CBD5E1" stroke-width="2" stroke-linecap="round"/>
+        <line x1="36" y1="46" x2="342" y2="46" stroke="#F1F5F9" stroke-width="1"/>
+      </g>
+    
+  </g>
+  
+  <!-- Tombol Keluar -->
+  <rect x="24" y="525" width="342" height="46" rx="12" fill="#EF4444"/>
+  <text x="195" y="554" font-family="-apple-system, Inter, sans-serif" font-size="14" font-weight="600" fill="#FFFFFF" text-anchor="middle">Keluar</text>
+  
+  
+    <g id="Bottom-Navigation">
+      <rect x="0" y="750" width="390" height="94" fill="#FFFFFF" filter="drop-shadow(0px -4px 12px rgba(0,0,0,0.04))"/>
+      <line x1="0" y1="750" x2="390" y2="750" stroke="#F1F5F9" stroke-width="1"/>
+      
+      <g id="Nav-Beranda" transform="translate(48, 765)" style="cursor: pointer;">
+        <path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" fill="none" stroke="#94A3B8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" transform="translate(-10, -5) scale(0.9)"/>
+        <text x="0" y="22" font-family="-apple-system, Inter, sans-serif" font-size="11" font-weight="500" fill="#94A3B8" text-anchor="middle">Beranda</text>
+      </g>
+    
+      <g id="Nav-Transaksi" transform="translate(144, 765)" style="cursor: pointer;">
+        <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" fill="none" stroke="#94A3B8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" transform="translate(-10, -5) scale(0.9)"/>
+        <text x="0" y="22" font-family="-apple-system, Inter, sans-serif" font-size="11" font-weight="500" fill="#94A3B8" text-anchor="middle">Transaksi</text>
+      </g>
+    
+      <g id="Nav-Laporan" transform="translate(240, 765)" style="cursor: pointer;">
+        <path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" fill="none" stroke="#94A3B8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" transform="translate(-10, -5) scale(0.9)"/>
+        <text x="0" y="22" font-family="-apple-system, Inter, sans-serif" font-size="11" font-weight="500" fill="#94A3B8" text-anchor="middle">Laporan</text>
+      </g>
+    
+      <g id="Nav-Akun" transform="translate(336, 765)" style="cursor: pointer;">
+        <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" fill="none" stroke="#107548" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" transform="translate(-10, -5) scale(0.9)"/>
+        <text x="0" y="22" font-family="-apple-system, Inter, sans-serif" font-size="11" font-weight="600" fill="#107548" text-anchor="middle">Akun</text>
+      </g>
+    
+      
+  <g id="Home-Indicator">
+    <rect x="130" y="828" width="130" height="4" rx="2" fill="#CBD5E1"/>
+  </g>
+
+    </g>
+  
+</svg>

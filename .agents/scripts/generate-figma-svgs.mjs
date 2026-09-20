@@ -1,0 +1,751 @@
+import fs from 'fs';
+import path from 'path';
+
+const outDir = 'd:/Pagawean/SelfProject/cashbook/figma-designs';
+if (!fs.existsSync(outDir)) {
+  fs.mkdirSync(outDir, { recursive: true });
+}
+
+// Common styles & icons
+const STATUS_BAR = `
+  <g id="Status-Bar">
+    <text x="32" y="36" font-family="-apple-system, Inter, Roboto, sans-serif" font-size="14" font-weight="600" fill="currentColor">9:41</text>
+    <g transform="translate(325, 25)" fill="currentColor">
+      <!-- Wifi & Battery & Signal -->
+      <path d="M12 3c-4.97 0-9 4.03-9 9 0 2.12.74 4.07 1.97 5.61L12 22l7.03-4.39C20.26 16.07 21 14.12 21 12c0-4.97-4.03-9-9-9z" opacity="0.3" transform="scale(0.6) translate(-10, -5)"/>
+      <rect x="18" y="3" width="20" height="10" rx="3" fill="none" stroke="currentColor" stroke-width="2"/>
+      <rect x="20" y="5" width="13" height="6" rx="1.5" fill="currentColor"/>
+      <path d="M39 6v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    </g>
+  </g>
+`;
+
+const HOME_INDICATOR = `
+  <g id="Home-Indicator">
+    <rect x="130" y="828" width="130" height="4" rx="2" fill="#CBD5E1"/>
+  </g>
+`;
+
+function bottomNav(activeTab) {
+  const tabs = [
+    { id: 'beranda', name: 'Beranda', icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6' },
+    { id: 'transaksi', name: 'Transaksi', icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01' },
+    { id: 'laporan', name: 'Laporan', icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z' },
+    { id: 'akun', name: 'Akun', icon: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z' }
+  ];
+
+  let items = tabs.map((t, idx) => {
+    const x = 48 + idx * 96;
+    const isActive = t.id === activeTab;
+    const color = isActive ? '#107548' : '#94A3B8';
+    return `
+      <g id="Nav-${t.name}" transform="translate(${x}, 765)" style="cursor: pointer;">
+        <path d="${t.icon}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" transform="translate(-10, -5) scale(0.9)"/>
+        <text x="0" y="22" font-family="-apple-system, Inter, sans-serif" font-size="11" font-weight="${isActive ? '600' : '500'}" fill="${color}" text-anchor="middle">${t.name}</text>
+      </g>
+    `;
+  }).join('');
+
+  return `
+    <g id="Bottom-Navigation">
+      <rect x="0" y="750" width="390" height="94" fill="#FFFFFF" filter="drop-shadow(0px -4px 12px rgba(0,0,0,0.04))"/>
+      <line x1="0" y1="750" x2="390" y2="750" stroke="#F1F5F9" stroke-width="1"/>
+      ${items}
+      ${HOME_INDICATOR}
+    </g>
+  `;
+}
+
+// 1. Splash Screen
+const splashScreen = `
+<svg width="390" height="844" viewBox="0 0 390 844" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="splash-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#15803D" />
+      <stop offset="100%" stop-color="#0F5B2C" />
+    </linearGradient>
+  </defs>
+  <!-- Background -->
+  <rect width="390" height="844" rx="44" fill="url(#splash-bg)"/>
+  
+  <!-- Status Bar -->
+  <g color="#FFFFFF">${STATUS_BAR}</g>
+  
+  <!-- Logo & Title -->
+  <g id="Logo-Container" transform="translate(145, 310)">
+    <rect width="100" height="74" rx="20" fill="#FFFFFF"/>
+    <!-- Wallet Icon -->
+    <path d="M72 32H84V48H72C67.5817 48 64 44.4183 64 40C64 35.5817 67.5817 32 72 32Z" fill="#15803D"/>
+    <circle cx="73" cy="40" r="3.5" fill="#FFFFFF"/>
+    <path d="M22 22C22 17.5817 25.5817 14 30 14H76C80.4183 14 84 17.5817 84 22V28H28C24.6863 28 22 25.3137 22 22Z" fill="#22C55E"/>
+    <circle cx="34" cy="44" r="5" fill="#15803D" opacity="0.4"/>
+  </g>
+  
+  <text x="195" y="440" font-family="-apple-system, Inter, sans-serif" font-size="28" font-weight="700" fill="#FFFFFF" text-anchor="middle">Cashbook</text>
+  <text x="195" y="475" font-family="-apple-system, Inter, sans-serif" font-size="14" font-weight="400" fill="#BBF7D0" text-anchor="middle">Catat pemasukan dan pengeluaran</text>
+  <text x="195" y="495" font-family="-apple-system, Inter, sans-serif" font-size="14" font-weight="400" fill="#BBF7D0" text-anchor="middle">dengan mudah</text>
+  
+  <!-- Loading Bar -->
+  <rect x="155" y="690" width="80" height="4" rx="2" fill="rgba(255,255,255,0.3)"/>
+  <rect x="155" y="690" width="38" height="4" rx="2" fill="#FFFFFF"/>
+  
+  <!-- Home Indicator -->
+  <rect x="130" y="828" width="130" height="4" rx="2" fill="rgba(255,255,255,0.4)"/>
+</svg>
+`;
+
+// 2. Login / Welcome
+const loginScreen = `
+<svg width="390" height="844" viewBox="0 0 390 844" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="390" height="844" rx="44" fill="#FAFCFB"/>
+  
+  <!-- Status Bar -->
+  <g color="#1E293B">${STATUS_BAR}</g>
+  
+  <!-- Logo & Heading -->
+  <g id="Logo" transform="translate(155, 140)">
+    <rect width="80" height="60" rx="16" fill="#16A34A"/>
+    <path d="M58 24H68V38H58C54.6863 38 52 35.3137 52 31C52 26.6863 54.6863 24 58 24Z" fill="#FFFFFF"/>
+    <circle cx="59" cy="31" r="2.5" fill="#16A34A"/>
+    <path d="M18 16C18 12.6863 20.6863 10 24 10H62C65.3137 10 68 12.6863 68 16V20H22C19.7909 20 18 18.2091 18 16Z" fill="#86EFAC"/>
+  </g>
+  
+  <text x="195" y="245" font-family="-apple-system, Inter, sans-serif" font-size="26" font-weight="700" fill="#0F172A" text-anchor="middle">Cashbook</text>
+  <text x="195" y="272" font-family="-apple-system, Inter, sans-serif" font-size="14" font-weight="400" fill="#64748B" text-anchor="middle">Kelola keuangan, capai tujuanmu</text>
+  
+  <!-- Buttons -->
+  <!-- Masuk -->
+  <rect x="24" y="325" width="342" height="48" rx="12" fill="#15803D"/>
+  <text x="195" y="355" font-family="-apple-system, Inter, sans-serif" font-size="15" font-weight="600" fill="#FFFFFF" text-anchor="middle">Masuk</text>
+  
+  <!-- Daftar -->
+  <rect x="24" y="385" width="342" height="48" rx="12" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.5"/>
+  <text x="195" y="415" font-family="-apple-system, Inter, sans-serif" font-size="15" font-weight="600" fill="#15803D" text-anchor="middle">Daftar</text>
+  
+  <text x="195" y="468" font-family="-apple-system, Inter, sans-serif" font-size="13" font-weight="400" fill="#94A3B8" text-anchor="middle">atau</text>
+  
+  <!-- Google Sign In -->
+  <rect x="24" y="490" width="342" height="48" rx="12" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.5"/>
+  <g transform="translate(108, 504)">
+    <path d="M10 4.5c2.4 0 4 1 5 1.9l3.5-3.5C16.4 1 13.5 0 10 0 6.1 0 2.8 2.2 1.1 5.4l4.1 3.2C6.2 6.1 7.9 4.5 10 4.5z" fill="#EA4335"/>
+    <path d="M19.6 10.2c0-.7-.1-1.4-.2-2.1H10v4.2h5.5c-.3 1.3-1.1 2.5-2.2 3.2l3.4 2.7c2-1.9 3.1-4.7 3.1-7.8z" fill="#4285F4"/>
+    <path d="M5.2 11.4c-.2-.7-.3-1.5-.3-2.3s.1-1.6.3-2.3L1.1 3.6C.4 5 0 6.5 0 8.1s.4 3.1 1.1 4.5l4.1-3.2z" fill="#FBBC05"/>
+    <path d="M10 19.5c2.7 0 5-1 6.7-2.6l-3.4-2.7c-.9.6-2.1 1-3.3 1-2.1 0-3.8-1.5-4.5-3.5L1.4 15C3.1 18.2 6.3 19.5 10 19.5z" fill="#34A853"/>
+  </g>
+  <text x="200" y="520" font-family="-apple-system, Inter, sans-serif" font-size="14" font-weight="500" fill="#1E293B" text-anchor="middle">Lanjut dengan Google</text>
+  
+  <!-- Illustration (Potted plant & wallet) -->
+  <g transform="translate(145, 620)">
+    <ellipse cx="50" cy="80" rx="60" ry="14" fill="#F0FDF4"/>
+    <path d="M30 65l4 25h16l4-25z" fill="#86EFAC"/>
+    <path d="M34 50c0-10 6-18 6-18s6 8 6 18c0 5-3 10-6 10s-6-5-6-10z" fill="#22C55E"/>
+    <path d="M22 55c-6-8-4-16-4-16s8 4 12 10c3 4 2 8 0 10s-5 0-8-4z" fill="#16A34A"/>
+    <!-- Wallet mini -->
+    <rect x="52" y="60" width="42" height="30" rx="8" fill="#166534"/>
+    <rect x="74" y="68" width="18" height="14" rx="4" fill="#22C55E"/>
+    <circle cx="80" cy="75" r="2" fill="#FFFFFF"/>
+  </g>
+  
+  ${HOME_INDICATOR}
+</svg>
+`;
+
+// 3. Home / Dashboard
+const homeScreen = `
+<svg width="390" height="844" viewBox="0 0 390 844" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="390" height="844" rx="44" fill="#F8FAFC"/>
+  
+  <!-- Status Bar -->
+  <g color="#1E293B">${STATUS_BAR}</g>
+  
+  <!-- Top App Bar -->
+  <g id="App-Bar" transform="translate(20, 60)">
+    <rect x="0" y="0" width="32" height="24" rx="6" fill="#15803D"/>
+    <path d="M22 6h8v10h-8z" fill="#86EFAC"/>
+    <text x="42" y="18" font-family="-apple-system, Inter, sans-serif" font-size="18" font-weight="700" fill="#0F172A">Cashbook</text>
+    
+    <!-- Bell & Menu -->
+    <path d="M305 8a5 5 0 00-10 0c0 4-2 6-2 6h14s-2-2-2-6zm-7 10a2 2 0 004 0" stroke="#475569" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <circle cx="304" cy="5" r="3.5" fill="#EF4444"/>
+    <circle cx="335" cy="9" r="2" fill="#475569"/>
+    <circle cx="335" cy="15" r="2" fill="#475569"/>
+    <circle cx="335" cy="21" r="2" fill="#475569"/>
+  </g>
+  
+  <!-- Saldo Card -->
+  <g id="Card-Saldo" transform="translate(20, 105)">
+    <rect width="350" height="100" rx="16" fill="#15803D"/>
+    <text x="20" y="32" font-family="-apple-system, Inter, sans-serif" font-size="13" font-weight="400" fill="#BBF7D0">Saldo Saat Ini</text>
+    <path d="M315 26c-4-4-10-4-14 0-2 2-2 5 0 7 4 4 10 4 14 0 2-2 2-5 0-7zm-7 5a1.5 1.5 0 110-3 1.5 1.5 0 010 3z" stroke="#BBF7D0" stroke-width="1.5" fill="none"/>
+    <text x="20" y="72" font-family="-apple-system, Inter, sans-serif" font-size="24" font-weight="700" fill="#FFFFFF">Rp 5.250.000</text>
+  </g>
+  
+  <!-- Quick Actions (Tambah Pemasukan, Pengeluaran, Transfer) -->
+  <g id="Quick-Actions" transform="translate(20, 222)">
+    <!-- Tambah Pemasukan -->
+    <circle cx="50" cy="24" r="22" fill="#10B981"/>
+    <path d="M50 32V16m-5 5l5-5 5 5" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="50" y="60" font-family="-apple-system, Inter, sans-serif" font-size="11" font-weight="500" fill="#475569" text-anchor="middle">Tambah</text>
+    <text x="50" y="73" font-family="-apple-system, Inter, sans-serif" font-size="11" font-weight="500" fill="#475569" text-anchor="middle">Pemasukan</text>
+    
+    <!-- Tambah Pengeluaran -->
+    <circle cx="175" cy="24" r="22" fill="#EF4444"/>
+    <path d="M175 16v16m-5-5l5 5 5-5" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="175" y="60" font-family="-apple-system, Inter, sans-serif" font-size="11" font-weight="500" fill="#475569" text-anchor="middle">Tambah</text>
+    <text x="175" y="73" font-family="-apple-system, Inter, sans-serif" font-size="11" font-weight="500" fill="#475569" text-anchor="middle">Pengeluaran</text>
+    
+    <!-- Transfer -->
+    <circle cx="300" cy="24" r="22" fill="#3B82F6"/>
+    <path d="M293 20h14m-3-4l4 4-4 4m1-1v-4m-6 8h-14m3 4l-4-4 4-4" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="300" y="66" font-family="-apple-system, Inter, sans-serif" font-size="11" font-weight="500" fill="#475569" text-anchor="middle">Transfer</text>
+  </g>
+  
+  <!-- Ringkasan Bulan Ini -->
+  <g id="Ringkasan" transform="translate(20, 325)">
+    <rect width="350" height="155" rx="16" fill="#FFFFFF" stroke="#F1F5F9" stroke-width="1"/>
+    <text x="16" y="28" font-family="-apple-system, Inter, sans-serif" font-size="14" font-weight="600" fill="#0F172A">Ringkasan Bulan Ini</text>
+    <text x="334" y="28" font-family="-apple-system, Inter, sans-serif" font-size="12" font-weight="500" fill="#64748B" text-anchor="end">Okt 2025 ></text>
+    
+    <!-- Pemasukan -->
+    <circle cx="28" cy="62" r="12" fill="#DCFCE7"/>
+    <path d="M28 66v-8m-3 3l3-3 3 3" stroke="#16A34A" stroke-width="1.8" stroke-linecap="round"/>
+    <text x="48" y="66" font-family="-apple-system, Inter, sans-serif" font-size="13" font-weight="500" fill="#334155">Total Pemasukan</text>
+    <text x="334" y="66" font-family="-apple-system, Inter, sans-serif" font-size="13" font-weight="600" fill="#16A34A" text-anchor="end">Rp 8.750.000</text>
+    
+    <!-- Pengeluaran -->
+    <circle cx="28" cy="100" r="12" fill="#FEE2E2"/>
+    <path d="M28 96v8m-3-3l3 3 3-3" stroke="#EF4444" stroke-width="1.8" stroke-linecap="round"/>
+    <text x="48" y="104" font-family="-apple-system, Inter, sans-serif" font-size="13" font-weight="500" fill="#334155">Total Pengeluaran</text>
+    <text x="334" y="104" font-family="-apple-system, Inter, sans-serif" font-size="13" font-weight="600" fill="#EF4444" text-anchor="end">Rp 3.500.000</text>
+    
+    <!-- Selisih -->
+    <circle cx="28" cy="136" r="12" fill="#E2E8F0"/>
+    <path d="M23 134h10m-10 4h10" stroke="#475569" stroke-width="1.8" stroke-linecap="round"/>
+    <text x="48" y="140" font-family="-apple-system, Inter, sans-serif" font-size="13" font-weight="500" fill="#334155">Selisih</text>
+    <text x="334" y="140" font-family="-apple-system, Inter, sans-serif" font-size="13" font-weight="600" fill="#0F172A" text-anchor="end">Rp 5.250.000</text>
+  </g>
+  
+  <!-- Transaksi Terbaru -->
+  <g id="Transaksi-Terbaru" transform="translate(20, 505)">
+    <text x="0" y="16" font-family="-apple-system, Inter, sans-serif" font-size="14" font-weight="600" fill="#0F172A">Transaksi Terbaru</text>
+    <text x="350" y="16" font-family="-apple-system, Inter, sans-serif" font-size="12" font-weight="500" fill="#2563EB" text-anchor="end">Lihat Semua</text>
+    
+    <!-- Item 1 -->
+    <rect x="0" y="30" width="350" height="66" rx="14" fill="#FFFFFF" stroke="#F1F5F9" stroke-width="1"/>
+    <circle cx="32" cy="63" r="18" fill="#FEE2E2"/>
+    <path d="M26 60v6m6-6v6m-4-8v8m2 0a3 3 0 01-6 0" stroke="#EF4444" stroke-width="1.5"/>
+    <text x="60" y="56" font-family="-apple-system, Inter, sans-serif" font-size="14" font-weight="600" fill="#1E293B">Makan Siang</text>
+    <text x="60" y="74" font-family="-apple-system, Inter, sans-serif" font-size="12" font-weight="400" fill="#94A3B8">12 Okt 2025</text>
+    <text x="334" y="65" font-family="-apple-system, Inter, sans-serif" font-size="14" font-weight="600" fill="#EF4444" text-anchor="end">- Rp 45.000</text>
+  </g>
+  
+  ${bottomNav('beranda')}
+</svg>
+`;
+
+// 4. Tambah Pemasukan
+const formPemasukan = `
+<svg width="390" height="844" viewBox="0 0 390 844" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="390" height="844" rx="44" fill="#FAFCFB"/>
+  <g color="#1E293B">${STATUS_BAR}</g>
+  
+  <!-- Header -->
+  <g transform="translate(20, 60)">
+    <path d="M18 12H6m0 0l6-6m-6 6l6 6" stroke="#0F172A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="36" y="16" font-family="-apple-system, Inter, sans-serif" font-size="17" font-weight="600" fill="#0F172A">Tambah Pemasukan</text>
+  </g>
+  
+  <!-- Fields -->
+  <!-- Jumlah -->
+  <g transform="translate(24, 120)">
+    <text x="0" y="0" font-family="-apple-system, Inter, sans-serif" font-size="13" font-weight="600" fill="#334155">Jumlah</text>
+    <rect x="0" y="12" width="342" height="52" rx="12" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.5"/>
+    <text x="16" y="44" font-family="-apple-system, Inter, sans-serif" font-size="16" font-weight="400" fill="#64748B">Rp</text>
+    <text x="45" y="44" font-family="-apple-system, Inter, sans-serif" font-size="18" font-weight="600" fill="#0F172A">1.000.000</text>
+  </g>
+  
+  <!-- Kategori -->
+  <g transform="translate(24, 215)">
+    <text x="0" y="0" font-family="-apple-system, Inter, sans-serif" font-size="13" font-weight="600" fill="#334155">Kategori</text>
+    <rect x="0" y="12" width="342" height="52" rx="12" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.5"/>
+    <circle cx="32" cy="38" r="14" fill="#DCFCE7"/>
+    <path d="M27 38h10m-5-5v10" stroke="#16A34A" stroke-width="2" stroke-linecap="round"/>
+    <text x="56" y="43" font-family="-apple-system, Inter, sans-serif" font-size="15" font-weight="500" fill="#1E293B">Gaji</text>
+    <path d="M320 34l4 4-4 4" stroke="#94A3B8" stroke-width="2" stroke-linecap="round"/>
+  </g>
+  
+  <!-- Tanggal -->
+  <g transform="translate(24, 310)">
+    <text x="0" y="0" font-family="-apple-system, Inter, sans-serif" font-size="13" font-weight="600" fill="#334155">Tanggal</text>
+    <rect x="0" y="12" width="342" height="52" rx="12" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.5"/>
+    <path d="M22 30h16v16H22zm0 4h16m-12-8v4m8-4v4" stroke="#64748B" stroke-width="1.5"/>
+    <text x="50" y="44" font-family="-apple-system, Inter, sans-serif" font-size="15" font-weight="500" fill="#1E293B">12 Okt 2025</text>
+    <path d="M320 34l4 4-4 4" stroke="#94A3B8" stroke-width="2" stroke-linecap="round"/>
+  </g>
+  
+  <!-- Catatan (opsional) -->
+  <g transform="translate(24, 405)">
+    <text x="0" y="0" font-family="-apple-system, Inter, sans-serif" font-size="13" font-weight="600" fill="#334155">Catatan (opsional)</text>
+    <rect x="0" y="12" width="342" height="85" rx="12" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.5"/>
+    <text x="16" y="38" font-family="-apple-system, Inter, sans-serif" font-size="14" font-weight="400" fill="#334155">Gaji bulan Oktober</text>
+  </g>
+  
+  <!-- Tombol Simpan -->
+  <rect x="24" y="550" width="342" height="50" rx="12" fill="#15803D"/>
+  <text x="195" y="581" font-family="-apple-system, Inter, sans-serif" font-size="15" font-weight="600" fill="#FFFFFF" text-anchor="middle">Simpan</text>
+  
+  ${HOME_INDICATOR}
+</svg>
+`;
+
+// 5. Tambah Pengeluaran
+const formPengeluaran = `
+<svg width="390" height="844" viewBox="0 0 390 844" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="390" height="844" rx="44" fill="#FAFCFB"/>
+  <g color="#1E293B">${STATUS_BAR}</g>
+  
+  <!-- Header -->
+  <g transform="translate(20, 60)">
+    <path d="M18 12H6m0 0l6-6m-6 6l6 6" stroke="#0F172A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="36" y="16" font-family="-apple-system, Inter, sans-serif" font-size="17" font-weight="600" fill="#0F172A">Tambah Pengeluaran</text>
+  </g>
+  
+  <!-- Fields -->
+  <!-- Jumlah -->
+  <g transform="translate(24, 120)">
+    <text x="0" y="0" font-family="-apple-system, Inter, sans-serif" font-size="13" font-weight="600" fill="#334155">Jumlah</text>
+    <rect x="0" y="12" width="342" height="52" rx="12" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.5"/>
+    <text x="16" y="44" font-family="-apple-system, Inter, sans-serif" font-size="16" font-weight="400" fill="#64748B">Rp</text>
+    <text x="45" y="44" font-family="-apple-system, Inter, sans-serif" font-size="18" font-weight="600" fill="#0F172A">250.000</text>
+  </g>
+  
+  <!-- Kategori -->
+  <g transform="translate(24, 215)">
+    <text x="0" y="0" font-family="-apple-system, Inter, sans-serif" font-size="13" font-weight="600" fill="#334155">Kategori</text>
+    <rect x="0" y="12" width="342" height="52" rx="12" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.5"/>
+    <circle cx="32" cy="38" r="14" fill="#FEE2E2"/>
+    <path d="M28 35v6m6-6v6m-4-8v8" stroke="#EF4444" stroke-width="1.5"/>
+    <text x="56" y="43" font-family="-apple-system, Inter, sans-serif" font-size="15" font-weight="500" fill="#1E293B">Makan &amp; Minum</text>
+    <path d="M320 34l4 4-4 4" stroke="#94A3B8" stroke-width="2" stroke-linecap="round"/>
+  </g>
+  
+  <!-- Tanggal -->
+  <g transform="translate(24, 310)">
+    <text x="0" y="0" font-family="-apple-system, Inter, sans-serif" font-size="13" font-weight="600" fill="#334155">Tanggal</text>
+    <rect x="0" y="12" width="342" height="52" rx="12" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.5"/>
+    <path d="M22 30h16v16H22zm0 4h16m-12-8v4m8-4v4" stroke="#64748B" stroke-width="1.5"/>
+    <text x="50" y="44" font-family="-apple-system, Inter, sans-serif" font-size="15" font-weight="500" fill="#1E293B">12 Okt 2025</text>
+    <path d="M320 34l4 4-4 4" stroke="#94A3B8" stroke-width="2" stroke-linecap="round"/>
+  </g>
+  
+  <!-- Catatan (opsional) -->
+  <g transform="translate(24, 405)">
+    <text x="0" y="0" font-family="-apple-system, Inter, sans-serif" font-size="13" font-weight="600" fill="#334155">Catatan (opsional)</text>
+    <rect x="0" y="12" width="342" height="85" rx="12" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.5"/>
+    <text x="16" y="38" font-family="-apple-system, Inter, sans-serif" font-size="14" font-weight="400" fill="#334155">Makan siang di warung</text>
+  </g>
+  
+  <!-- Tombol Simpan -->
+  <rect x="24" y="550" width="342" height="50" rx="12" fill="#EF4444"/>
+  <text x="195" y="581" font-family="-apple-system, Inter, sans-serif" font-size="15" font-weight="600" fill="#FFFFFF" text-anchor="middle">Simpan</text>
+  
+  ${HOME_INDICATOR}
+</svg>
+`;
+
+// 6. Daftar Transaksi
+const listTransaksi = `
+<svg width="390" height="844" viewBox="0 0 390 844" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="390" height="844" rx="44" fill="#F8FAFC"/>
+  <g color="#1E293B">${STATUS_BAR}</g>
+  
+  <!-- Header -->
+  <g transform="translate(20, 60)">
+    <text x="0" y="18" font-family="-apple-system, Inter, sans-serif" font-size="20" font-weight="700" fill="#0F172A">Transaksi</text>
+    <path d="M310 14a5 5 0 11-10 0 5 5 0 0110 0zm-2 4l4 4" stroke="#334155" stroke-width="2" stroke-linecap="round"/>
+    <path d="M335 10h14m-11 5h8m-5 5h2" stroke="#334155" stroke-width="2" stroke-linecap="round"/>
+  </g>
+  
+  <!-- Filter Pills -->
+  <g transform="translate(20, 105)">
+    <!-- Semua (Active) -->
+    <rect x="0" y="0" width="70" height="32" rx="16" fill="#15803D"/>
+    <text x="35" y="20" font-family="-apple-system, Inter, sans-serif" font-size="12" font-weight="600" fill="#FFFFFF" text-anchor="middle">Semua</text>
+    
+    <!-- Pemasukan -->
+    <rect x="78" y="0" width="95" height="32" rx="16" fill="#FFFFFF" stroke="#E2E8F0"/>
+    <text x="125" y="20" font-family="-apple-system, Inter, sans-serif" font-size="12" font-weight="500" fill="#64748B" text-anchor="middle">Pemasukan</text>
+    
+    <!-- Pengeluaran -->
+    <rect x="181" y="0" width="105" height="32" rx="16" fill="#FFFFFF" stroke="#E2E8F0"/>
+    <text x="233" y="20" font-family="-apple-system, Inter, sans-serif" font-size="12" font-weight="500" fill="#64748B" text-anchor="middle">Pengeluaran</text>
+  </g>
+  
+  <!-- Group: 12 Okt 2025 -->
+  <g transform="translate(20, 160)">
+    <text x="0" y="0" font-family="-apple-system, Inter, sans-serif" font-size="12" font-weight="600" fill="#64748B">12 Okt 2025</text>
+    
+    <!-- Item 1 -->
+    <rect x="0" y="10" width="350" height="64" rx="12" fill="#FFFFFF" stroke="#F1F5F9"/>
+    <circle cx="30" cy="42" r="16" fill="#FEE2E2"/>
+    <path d="M26 39v6m6-6v6" stroke="#EF4444" stroke-width="1.5"/>
+    <text x="56" y="37" font-family="-apple-system, Inter, sans-serif" font-size="14" font-weight="600" fill="#0F172A">Makan Siang</text>
+    <text x="56" y="53" font-family="-apple-system, Inter, sans-serif" font-size="11" font-weight="400" fill="#94A3B8">Makan &amp; Minum</text>
+    <text x="334" y="45" font-family="-apple-system, Inter, sans-serif" font-size="13" font-weight="600" fill="#EF4444" text-anchor="end">- Rp 45.000</text>
+    
+    <!-- Item 2 -->
+    <rect x="0" y="82" width="350" height="64" rx="12" fill="#FFFFFF" stroke="#F1F5F9"/>
+    <circle cx="30" cy="114" r="16" fill="#DCFCE7"/>
+    <path d="M30 110v8m-4-4h8" stroke="#16A34A" stroke-width="2"/>
+    <text x="56" y="109" font-family="-apple-system, Inter, sans-serif" font-size="14" font-weight="600" fill="#0F172A">Gaji</text>
+    <text x="56" y="125" font-family="-apple-system, Inter, sans-serif" font-size="11" font-weight="400" fill="#94A3B8">Pemasukan</text>
+    <text x="334" y="117" font-family="-apple-system, Inter, sans-serif" font-size="13" font-weight="600" fill="#16A34A" text-anchor="end">+ Rp 1.000.000</text>
+  </g>
+  
+  <!-- Group: 11 Okt 2025 -->
+  <g transform="translate(20, 330)">
+    <text x="0" y="0" font-family="-apple-system, Inter, sans-serif" font-size="12" font-weight="600" fill="#64748B">11 Okt 2025</text>
+    
+    <!-- Item 1 -->
+    <rect x="0" y="10" width="350" height="64" rx="12" fill="#FFFFFF" stroke="#F1F5F9"/>
+    <circle cx="30" cy="42" r="16" fill="#DBEAFE"/>
+    <path d="M26 36h8v12h-8z" stroke="#2563EB" stroke-width="1.5"/>
+    <text x="56" y="37" font-family="-apple-system, Inter, sans-serif" font-size="14" font-weight="600" fill="#0F172A">Pulsa</text>
+    <text x="56" y="53" font-family="-apple-system, Inter, sans-serif" font-size="11" font-weight="400" fill="#94A3B8">Hiburan &amp; Pulsa</text>
+    <text x="334" y="45" font-family="-apple-system, Inter, sans-serif" font-size="13" font-weight="600" fill="#EF4444" text-anchor="end">- Rp 100.000</text>
+    
+    <!-- Item 2 -->
+    <rect x="0" y="82" width="350" height="64" rx="12" fill="#FFFFFF" stroke="#F1F5F9"/>
+    <circle cx="30" cy="114" r="16" fill="#FEE2E2"/>
+    <path d="M24 110h12v10H24z" stroke="#EF4444" stroke-width="1.5"/>
+    <text x="56" y="109" font-family="-apple-system, Inter, sans-serif" font-size="14" font-weight="600" fill="#0F172A">Belanja Mingguan</text>
+    <text x="56" y="125" font-family="-apple-system, Inter, sans-serif" font-size="11" font-weight="400" fill="#94A3B8">Kebutuhan Rumah</text>
+    <text x="334" y="117" font-family="-apple-system, Inter, sans-serif" font-size="13" font-weight="600" fill="#EF4444" text-anchor="end">- Rp 320.000</text>
+  </g>
+  
+  <!-- Group: 10 Okt 2025 -->
+  <g transform="translate(20, 500)">
+    <text x="0" y="0" font-family="-apple-system, Inter, sans-serif" font-size="12" font-weight="600" fill="#64748B">10 Okt 2025</text>
+    <rect x="0" y="10" width="350" height="64" rx="12" fill="#FFFFFF" stroke="#F1F5F9"/>
+    <circle cx="30" cy="42" r="16" fill="#E0E7FF"/>
+    <path d="M24 45v-4l3-3h6l3 3v4" stroke="#4F46E5" stroke-width="1.5"/>
+    <text x="56" y="37" font-family="-apple-system, Inter, sans-serif" font-size="14" font-weight="600" fill="#0F172A">Transportasi</text>
+    <text x="56" y="53" font-family="-apple-system, Inter, sans-serif" font-size="11" font-weight="400" fill="#94A3B8">Transportasi</text>
+    <text x="334" y="45" font-family="-apple-system, Inter, sans-serif" font-size="13" font-weight="600" fill="#EF4444" text-anchor="end">- Rp 50.000</text>
+  </g>
+  
+  ${bottomNav('transaksi')}
+</svg>
+`;
+
+// 7. Detail Transaksi
+const detailTransaksi = `
+<svg width="390" height="844" viewBox="0 0 390 844" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="390" height="844" rx="44" fill="#FAFCFB"/>
+  <g color="#1E293B">${STATUS_BAR}</g>
+  
+  <!-- Header -->
+  <g transform="translate(20, 60)">
+    <path d="M18 12H6m0 0l6-6m-6 6l6 6" stroke="#0F172A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="36" y="16" font-family="-apple-system, Inter, sans-serif" font-size="17" font-weight="600" fill="#0F172A">Detail Transaksi</text>
+  </g>
+  
+  <!-- Amount Card -->
+  <g transform="translate(20, 115)">
+    <circle cx="40" cy="40" r="26" fill="#FEE2E2"/>
+    <path d="M34 35v10m12-10v10m-8-14v14" stroke="#EF4444" stroke-width="2"/>
+    <text x="80" y="34" font-family="-apple-system, Inter, sans-serif" font-size="17" font-weight="600" fill="#0F172A">Makan Siang</text>
+    <text x="80" y="58" font-family="-apple-system, Inter, sans-serif" font-size="20" font-weight="700" fill="#EF4444">- Rp 45.000</text>
+  </g>
+  
+  <!-- Detail List -->
+  <g transform="translate(24, 210)">
+    <!-- Row 1: Kategori -->
+    <text x="0" y="20" font-family="-apple-system, Inter, sans-serif" font-size="14" font-weight="400" fill="#64748B">Kategori</text>
+    <text x="342" y="20" font-family="-apple-system, Inter, sans-serif" font-size="14" font-weight="500" fill="#0F172A" text-anchor="end">Makan &amp; Minum</text>
+    <line x1="0" y1="40" x2="342" y2="40" stroke="#F1F5F9" stroke-width="1"/>
+    
+    <!-- Row 2: Tanggal -->
+    <text x="0" y="70" font-family="-apple-system, Inter, sans-serif" font-size="14" font-weight="400" fill="#64748B">Tanggal</text>
+    <text x="342" y="70" font-family="-apple-system, Inter, sans-serif" font-size="14" font-weight="500" fill="#0F172A" text-anchor="end">12 Okt 2025, 12:30</text>
+    <line x1="0" y1="90" x2="342" y2="90" stroke="#F1F5F9" stroke-width="1"/>
+    
+    <!-- Row 3: Catatan -->
+    <text x="0" y="120" font-family="-apple-system, Inter, sans-serif" font-size="14" font-weight="400" fill="#64748B">Catatan</text>
+    <text x="342" y="120" font-family="-apple-system, Inter, sans-serif" font-size="14" font-weight="500" fill="#0F172A" text-anchor="end">Makan siang di warung</text>
+  </g>
+  
+  <!-- Action Buttons: Edit & Hapus -->
+  <g transform="translate(24, 390)">
+    <rect x="0" y="0" width="162" height="46" rx="12" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.5"/>
+    <text x="81" y="28" font-family="-apple-system, Inter, sans-serif" font-size="14" font-weight="600" fill="#0F172A" text-anchor="middle">Edit</text>
+    
+    <rect x="180" y="0" width="162" height="46" rx="12" fill="#FFFFFF" stroke="#FCA5A5" stroke-width="1.5"/>
+    <text x="261" y="28" font-family="-apple-system, Inter, sans-serif" font-size="14" font-weight="600" fill="#EF4444" text-anchor="middle">Hapus</text>
+  </g>
+  
+  ${HOME_INDICATOR}
+</svg>
+`;
+
+// 8. Laporan
+const laporanScreen = `
+<svg width="390" height="844" viewBox="0 0 390 844" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="390" height="844" rx="44" fill="#F8FAFC"/>
+  <g color="#1E293B">${STATUS_BAR}</g>
+  
+  <!-- Header -->
+  <g transform="translate(20, 60)">
+    <text x="0" y="18" font-family="-apple-system, Inter, sans-serif" font-size="20" font-weight="700" fill="#0F172A">Laporan</text>
+  </g>
+  
+  <!-- Tabs -->
+  <g transform="translate(20, 100)">
+    <rect x="0" y="0" width="90" height="34" rx="17" fill="#15803D"/>
+    <text x="45" y="21" font-family="-apple-system, Inter, sans-serif" font-size="13" font-weight="600" fill="#FFFFFF" text-anchor="middle">Bulan ini</text>
+    
+    <rect x="98" y="0" width="90" height="34" rx="17" fill="#FFFFFF" stroke="#E2E8F0"/>
+    <text x="143" y="21" font-family="-apple-system, Inter, sans-serif" font-size="13" font-weight="500" fill="#64748B" text-anchor="middle">Tahun ini</text>
+    
+    <rect x="196" y="0" width="90" height="34" rx="17" fill="#FFFFFF" stroke="#E2E8F0"/>
+    <text x="241" y="21" font-family="-apple-system, Inter, sans-serif" font-size="13" font-weight="500" fill="#64748B" text-anchor="middle">Custom</text>
+  </g>
+  
+  <!-- Card Ringkasan -->
+  <g transform="translate(20, 155)">
+    <rect width="350" height="135" rx="16" fill="#FFFFFF" stroke="#F1F5F9"/>
+    <text x="16" y="26" font-family="-apple-system, Inter, sans-serif" font-size="14" font-weight="600" fill="#0F172A">Ringkasan</text>
+    
+    <circle cx="28" cy="54" r="10" fill="#DCFCE7"/>
+    <path d="M28 58v-8m-3 3l3-3 3 3" stroke="#16A34A" stroke-width="1.5"/>
+    <text x="46" y="58" font-family="-apple-system, Inter, sans-serif" font-size="13" font-weight="500" fill="#475569">Pemasukan</text>
+    <text x="334" y="58" font-family="-apple-system, Inter, sans-serif" font-size="13" font-weight="600" fill="#16A34A" text-anchor="end">Rp 8.750.000</text>
+    
+    <circle cx="28" cy="84" r="10" fill="#FEE2E2"/>
+    <path d="M28 80v8m-3-3l3 3 3-3" stroke="#EF4444" stroke-width="1.5"/>
+    <text x="46" y="88" font-family="-apple-system, Inter, sans-serif" font-size="13" font-weight="500" fill="#475569">Pengeluaran</text>
+    <text x="334" y="88" font-family="-apple-system, Inter, sans-serif" font-size="13" font-weight="600" fill="#EF4444" text-anchor="end">Rp 3.500.000</text>
+    
+    <text x="16" y="118" font-family="-apple-system, Inter, sans-serif" font-size="13" font-weight="600" fill="#0F172A">Selisih</text>
+    <text x="334" y="118" font-family="-apple-system, Inter, sans-serif" font-size="13" font-weight="700" fill="#0F172A" text-anchor="end">Rp 5.250.000</text>
+  </g>
+  
+  <!-- Grafik Keuangan Bar Chart -->
+  <g transform="translate(20, 310)">
+    <rect width="350" height="230" rx="16" fill="#FFFFFF" stroke="#F1F5F9"/>
+    <text x="16" y="28" font-family="-apple-system, Inter, sans-serif" font-size="14" font-weight="600" fill="#0F172A">Grafik Keuangan</text>
+    
+    <!-- Legend -->
+    <circle cx="24" cy="50" r="4" fill="#10B981"/>
+    <text x="34" y="53" font-family="-apple-system, Inter, sans-serif" font-size="11" font-weight="500" fill="#64748B">Pemasukan</text>
+    <circle cx="104" cy="50" r="4" fill="#EF4444"/>
+    <text x="114" y="53" font-family="-apple-system, Inter, sans-serif" font-size="11" font-weight="500" fill="#64748B">Pengeluaran</text>
+    
+    <!-- Chart Grid Lines -->
+    <g transform="translate(30, 80)">
+      <text x="0" y="0" font-family="-apple-system, Inter, sans-serif" font-size="10" font-weight="400" fill="#94A3B8">8jt</text>
+      <line x1="20" y1="-3" x2="300" y2="-3" stroke="#F1F5F9"/>
+      
+      <text x="0" y="30" font-family="-apple-system, Inter, sans-serif" font-size="10" font-weight="400" fill="#94A3B8">6jt</text>
+      <line x1="20" y1="27" x2="300" y2="27" stroke="#F1F5F9"/>
+      
+      <text x="0" y="60" font-family="-apple-system, Inter, sans-serif" font-size="10" font-weight="400" fill="#94A3B8">4jt</text>
+      <line x1="20" y1="57" x2="300" y2="57" stroke="#F1F5F9"/>
+      
+      <text x="0" y="90" font-family="-apple-system, Inter, sans-serif" font-size="10" font-weight="400" fill="#94A3B8">2jt</text>
+      <line x1="20" y1="87" x2="300" y2="87" stroke="#F1F5F9"/>
+      
+      <text x="0" y="115" font-family="-apple-system, Inter, sans-serif" font-size="10" font-weight="400" fill="#94A3B8">0</text>
+      <line x1="20" y1="112" x2="300" y2="112" stroke="#E2E8F0"/>
+      
+      <!-- Bars -->
+      <!-- Day 1 -->
+      <rect x="40" y="70" width="8" height="42" rx="2" fill="#10B981"/>
+      <rect x="50" y="90" width="8" height="22" rx="2" fill="#EF4444"/>
+      <text x="49" y="128" font-family="-apple-system, Inter, sans-serif" font-size="10" fill="#94A3B8" text-anchor="middle">1</text>
+      
+      <!-- Day 5 -->
+      <rect x="85" y="25" width="8" height="87" rx="2" fill="#10B981"/>
+      <rect x="95" y="75" width="8" height="37" rx="2" fill="#EF4444"/>
+      <text x="94" y="128" font-family="-apple-system, Inter, sans-serif" font-size="10" fill="#94A3B8" text-anchor="middle">5</text>
+      
+      <!-- Day 10 -->
+      <rect x="130" y="60" width="8" height="52" rx="2" fill="#10B981"/>
+      <rect x="140" y="45" width="8" height="67" rx="2" fill="#EF4444"/>
+      <text x="139" y="128" font-family="-apple-system, Inter, sans-serif" font-size="10" fill="#94A3B8" text-anchor="middle">10</text>
+      
+      <!-- Day 15 -->
+      <rect x="175" y="50" width="8" height="62" rx="2" fill="#10B981"/>
+      <rect x="185" y="65" width="8" height="47" rx="2" fill="#EF4444"/>
+      <text x="184" y="128" font-family="-apple-system, Inter, sans-serif" font-size="10" fill="#94A3B8" text-anchor="middle">15</text>
+      
+      <!-- Day 20 -->
+      <rect x="220" y="40" width="8" height="72" rx="2" fill="#10B981"/>
+      <rect x="230" y="80" width="8" height="32" rx="2" fill="#EF4444"/>
+      <text x="229" y="128" font-family="-apple-system, Inter, sans-serif" font-size="10" fill="#94A3B8" text-anchor="middle">20</text>
+      
+      <!-- Day 25 -->
+      <rect x="265" y="55" width="8" height="57" rx="2" fill="#10B981"/>
+      <rect x="275" y="60" width="8" height="52" rx="2" fill="#EF4444"/>
+      <text x="274" y="128" font-family="-apple-system, Inter, sans-serif" font-size="10" fill="#94A3B8" text-anchor="middle">25</text>
+    </g>
+  </g>
+  
+  ${bottomNav('laporan')}
+</svg>
+`;
+
+// 9. Kategori
+const kategoriScreen = `
+<svg width="390" height="844" viewBox="0 0 390 844" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="390" height="844" rx="44" fill="#FAFCFB"/>
+  <g color="#1E293B">${STATUS_BAR}</g>
+  
+  <!-- Header -->
+  <g transform="translate(20, 60)">
+    <path d="M18 12H6m0 0l6-6m-6 6l6 6" stroke="#0F172A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="36" y="16" font-family="-apple-system, Inter, sans-serif" font-size="17" font-weight="600" fill="#0F172A">Kategori</text>
+  </g>
+  
+  <!-- Toggle Tabs -->
+  <g transform="translate(24, 105)">
+    <rect width="342" height="42" rx="21" fill="#F1F5F9"/>
+    <rect x="4" y="4" width="165" height="34" rx="17" fill="#FFFFFF"/>
+    <text x="86" y="25" font-family="-apple-system, Inter, sans-serif" font-size="13" font-weight="500" fill="#64748B" text-anchor="middle">Pemasukan</text>
+    
+    <rect x="173" y="4" width="165" height="34" rx="17" fill="#15803D"/>
+    <text x="255" y="25" font-family="-apple-system, Inter, sans-serif" font-size="13" font-weight="600" fill="#FFFFFF" text-anchor="middle">Pengeluaran</text>
+  </g>
+  
+  <!-- Categories List -->
+  <g transform="translate(24, 170)">
+    ${[
+      { name: 'Makan & Minum', color: '#EF4444', bg: '#FEE2E2', icon: 'M14 10v6m6-6v6' },
+      { name: 'Transportasi', color: '#F97316', bg: '#FFEDD5', icon: 'M12 16v-3l2-2h4l2 2v3' },
+      { name: 'Belanja', color: '#F59E0B', bg: '#FEF3C7', icon: 'M10 12h12v10H10z' },
+      { name: 'Kesehatan', color: '#3B82F6', bg: '#DBEAFE', icon: 'M16 12v8m-4-4h8' },
+      { name: 'Pendidikan', color: '#6366F1', bg: '#E0E7FF', icon: 'M16 10l8 4-8 4-8-4z' },
+      { name: 'Hiburan & Pulsa', color: '#EC4899', bg: '#FCE7F3', icon: 'M12 12h8v10h-8z' },
+      { name: 'Tagihan', color: '#0EA5E9', bg: '#E0F2FE', icon: 'M12 10h8v12h-8z' },
+      { name: 'Lainnya', color: '#64748B', bg: '#F1F5F9', icon: 'M12 16h8' }
+    ].map((cat, i) => `
+      <g transform="translate(0, ${i * 54})">
+        <circle cx="20" cy="20" r="16" fill="${cat.bg}"/>
+        <path d="${cat.icon}" stroke="${cat.color}" stroke-width="1.6" stroke-linecap="round"/>
+        <text x="48" y="25" font-family="-apple-system, Inter, sans-serif" font-size="14" font-weight="500" fill="#1E293B">${cat.name}</text>
+        <path d="M330 16l4 4-4 4" stroke="#CBD5E1" stroke-width="2" stroke-linecap="round"/>
+        ${i < 7 ? '<line x1="48" y1="46" x2="342" y2="46" stroke="#F8FAFC" stroke-width="1"/>' : ''}
+      </g>
+    `).join('')}
+  </g>
+  
+  ${HOME_INDICATOR}
+</svg>
+`;
+
+// 10. Pengaturan Akun
+const akunScreen = `
+<svg width="390" height="844" viewBox="0 0 390 844" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="390" height="844" rx="44" fill="#FAFCFB"/>
+  <g color="#1E293B">${STATUS_BAR}</g>
+  
+  <!-- Header -->
+  <g transform="translate(20, 60)">
+    <text x="0" y="18" font-family="-apple-system, Inter, sans-serif" font-size="20" font-weight="700" fill="#0F172A">Akun</text>
+  </g>
+  
+  <!-- User Profile Card -->
+  <g transform="translate(24, 105)">
+    <circle cx="30" cy="30" r="28" fill="#94A3B8"/>
+    <!-- Avatar head/body -->
+    <circle cx="30" cy="24" r="9" fill="#FFFFFF"/>
+    <path d="M16 48c0-8 6-12 14-12s14 4 14 12" fill="#FFFFFF"/>
+    
+    <text x="70" y="26" font-family="-apple-system, Inter, sans-serif" font-size="16" font-weight="600" fill="#0F172A">Andi Pratama</text>
+    <text x="70" y="46" font-family="-apple-system, Inter, sans-serif" font-size="13" font-weight="400" fill="#64748B">andi@example.com</text>
+  </g>
+  
+  <!-- Menu Items -->
+  <g transform="translate(24, 185)">
+    ${[
+      { label: 'Profil', icon: 'M16 7a4 4 0 11-8 0 4 4 0 018 0z' },
+      { label: 'Kelola Akun', icon: 'M10 12h12v8H10z' },
+      { label: 'Sinkronisasi', sub: 'Terakhir: 12 Okt 2025, 09:10', icon: 'M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15' },
+      { label: 'Tema', badge: 'Terang', icon: 'M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z' },
+      { label: 'Notifikasi', icon: 'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5' },
+      { label: 'Tentang Cashbook', icon: 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' }
+    ].map((item, i) => `
+      <g transform="translate(0, ${i * 54})">
+        <path d="${item.icon}" stroke="#475569" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round" transform="translate(0, 5) scale(0.9)"/>
+        <text x="36" y="${item.sub ? '18' : '23'}" font-family="-apple-system, Inter, sans-serif" font-size="14" font-weight="500" fill="#1E293B">${item.label}</text>
+        ${item.sub ? `<text x="36" y="34" font-family="-apple-system, Inter, sans-serif" font-size="11" font-weight="400" fill="#94A3B8">${item.sub}</text>` : ''}
+        ${item.badge ? `<text x="310" y="23" font-family="-apple-system, Inter, sans-serif" font-size="12" font-weight="400" fill="#94A3B8" text-anchor="end">${item.badge}</text>` : ''}
+        <path d="M330 16l4 4-4 4" stroke="#CBD5E1" stroke-width="2" stroke-linecap="round"/>
+        <line x1="36" y1="46" x2="342" y2="46" stroke="#F1F5F9" stroke-width="1"/>
+      </g>
+    `).join('')}
+  </g>
+  
+  <!-- Tombol Keluar -->
+  <rect x="24" y="525" width="342" height="46" rx="12" fill="#EF4444"/>
+  <text x="195" y="554" font-family="-apple-system, Inter, sans-serif" font-size="14" font-weight="600" fill="#FFFFFF" text-anchor="middle">Keluar</text>
+  
+  ${bottomNav('akun')}
+</svg>
+`;
+
+const screens = [
+  { file: '01-splash-screen.svg', content: splashScreen, label: '1. Splash Screen' },
+  { file: '02-login-welcome.svg', content: loginScreen, label: '2. Login / Welcome' },
+  { file: '03-home-dashboard.svg', content: homeScreen, label: '3. Home / Dashboard' },
+  { file: '04-tambah-pemasukan.svg', content: formPemasukan, label: '4. Tambah Pemasukan' },
+  { file: '05-tambah-pengeluaran.svg', content: formPengeluaran, label: '5. Tambah Pengeluaran' },
+  { file: '06-daftar-transaksi.svg', content: listTransaksi, label: '6. Daftar Transaksi' },
+  { file: '07-detail-transaksi.svg', content: detailTransaksi, label: '7. Detail Transaksi' },
+  { file: '08-laporan.svg', content: laporanScreen, label: '8. Laporan' },
+  { file: '09-kategori.svg', content: kategoriScreen, label: '9. Kategori' },
+  { file: '10-pengaturan-akun.svg', content: akunScreen, label: '10. Pengaturan Akun' },
+];
+
+screens.forEach(s => {
+  fs.writeFileSync(path.join(outDir, s.file), s.content.trim());
+  console.log(`Generated ${s.file}`);
+});
+
+// Also create 2-row Master Artboard (5 screens on top row, 5 screens on bottom row)
+// Width: 5 * 390 + 6 * 40 = 2190
+// Height: 2 * 844 + 3 * 60 + 100 = 2080
+let artboardItems = '';
+screens.forEach((s, idx) => {
+  const col = idx % 5;
+  const row = Math.floor(idx / 5);
+  const x = 50 + col * (390 + 50);
+  const y = 80 + row * (844 + 100);
+  
+  // Extract SVG inner content
+  const inner = s.content.replace(/<svg[^>]*>/, '').replace(/<\/svg>/, '');
+  artboardItems += `
+    <g id="Frame-${s.file.replace('.svg', '')}" transform="translate(${x}, ${y})">
+      <!-- Device Drop Shadow & Frame Container -->
+      <rect width="390" height="844" rx="44" fill="#FFFFFF" filter="drop-shadow(0 20px 30px rgba(0,0,0,0.12))"/>
+      ${inner}
+      <!-- Label below screen -->
+      <text x="195" y="890" font-family="-apple-system, Inter, sans-serif" font-size="18" font-weight="600" fill="#0F172A" text-anchor="middle">${s.label}</text>
+    </g>
+  `;
+});
+
+const masterArtboard = `
+<svg width="2300" height="2040" viewBox="0 0 2300 2040" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="2300" height="2040" fill="#F1F5F9"/>
+  <!-- Title Header -->
+  <text x="50" y="48" font-family="-apple-system, Inter, sans-serif" font-size="28" font-weight="800" fill="#0F172A">Cashbook - Mobile UI/UX Design System</text>
+  <text x="600" y="48" font-family="-apple-system, Inter, sans-serif" font-size="16" font-weight="500" fill="#64748B">10 Screens Flow (Ready to Import into Figma)</text>
+  
+  ${artboardItems}
+</svg>
+`;
+
+fs.writeFileSync(path.join(outDir, 'all-screens-artboard.svg'), masterArtboard.trim());
+console.log('Generated all-screens-artboard.svg');

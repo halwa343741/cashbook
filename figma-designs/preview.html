@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cashbook UI/UX Design System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #0F172A;
+      color: #F8FAFC;
+      padding: 40px 24px;
+      min-height: 100vh;
+    }
+    .header {
+      max-width: 1400px;
+      margin: 0 auto 36px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+    .title h1 {
+      font-size: 28px;
+      font-weight: 800;
+      color: #FFFFFF;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .badge {
+      font-size: 12px;
+      font-weight: 600;
+      background: #15803D;
+      color: #DCFCE7;
+      padding: 4px 10px;
+      border-radius: 9999px;
+    }
+    .subtitle {
+      color: #94A3B8;
+      font-size: 14px;
+      margin-top: 6px;
+    }
+    .actions {
+      display: flex;
+      gap: 12px;
+    }
+    .btn {
+      padding: 10px 18px;
+      font-size: 13px;
+      font-weight: 600;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      background: rgba(255, 255, 255, 0.08);
+      color: #FFFFFF;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+    .btn:hover {
+      background: rgba(255, 255, 255, 0.16);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+    .grid {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 32px;
+    }
+    .card {
+      background: #1E293B;
+      border-radius: 24px;
+      padding: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+    .card:hover {
+      transform: translateY(-4px);
+      border-color: #22C55E;
+    }
+    .screen-img {
+      width: 100%;
+      max-width: 280px;
+      height: auto;
+      border-radius: 20px;
+      display: block;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+      background: #FFFFFF;
+    }
+    .screen-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #E2E8F0;
+      margin-top: 16px;
+      text-align: center;
+    }
+    .screen-download {
+      margin-top: 10px;
+      font-size: 12px;
+      color: #22C55E;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .screen-download:hover {
+      text-decoration: underline;
+    }
+    .instructions {
+      max-width: 1400px;
+      margin: 40px auto 0;
+      background: rgba(22, 163, 74, 0.1);
+      border: 1px solid rgba(34, 197, 94, 0.3);
+      padding: 20px 24px;
+      border-radius: 16px;
+    }
+    .instructions h3 {
+      color: #4ADE80;
+      font-size: 16px;
+      margin-bottom: 8px;
+    }
+    .instructions p, .instructions ol {
+      color: #CBD5E1;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    .instructions ol {
+      margin-left: 20px;
+      margin-top: 6px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="title">
+      <h1>
+        Cashbook UI/UX Design System
+        <span class="badge">10 Screens Ready</span>
+      </h1>
+      <p class="subtitle">Semua 10 halaman telah digambar ulang secara presisi dalam format Vector SVG untuk Figma.</p>
+    </div>
+    <div class="actions">
+      <a href="./all-screens-artboard.svg" download class="btn">
+        <span>📥</span> Download Master Artboard (SVG)
+      </a>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <img src="./01-splash-screen.svg" alt="1. Splash Screen" class="screen-img">
+      <div class="screen-title">1. Splash Screen</div>
+      <a href="./01-splash-screen.svg" download class="screen-download">Download SVG</a>
+    </div>
+
+    <div class="card">
+      <img src="./02-login-welcome.svg" alt="2. Login / Welcome" class="screen-img">
+      <div class="screen-title">2. Login / Welcome</div>
+      <a href="./02-login-welcome.svg" download class="screen-download">Download SVG</a>
+    </div>
+
+    <div class="card">
+      <img src="./03-home-dashboard.svg" alt="3. Home / Dashboard" class="screen-img">
+      <div class="screen-title">3. Home / Dashboard</div>
+      <a href="./03-home-dashboard.svg" download class="screen-download">Download SVG</a>
+    </div>
+
+    <div class="card">
+      <img src="./04-tambah-pemasukan.svg" alt="4. Tambah Pemasukan" class="screen-img">
+      <div class="screen-title">4. Tambah Pemasukan</div>
+      <a href="./04-tambah-pemasukan.svg" download class="screen-download">Download SVG</a>
+    </div>
+
+    <div class="card">
+      <img src="./05-tambah-pengeluaran.svg" alt="5. Tambah Pengeluaran" class="screen-img">
+      <div class="screen-title">5. Tambah Pengeluaran</div>
+      <a href="./05-tambah-pengeluaran.svg" download class="screen-download">Download SVG</a>
+    </div>
+
+    <div class="card">
+      <img src="./06-daftar-transaksi.svg" alt="6. Daftar Transaksi" class="screen-img">
+      <div class="screen-title">6. Daftar Transaksi</div>
+      <a href="./06-daftar-transaksi.svg" download class="screen-download">Download SVG</a>
+    </div>
+
+    <div class="card">
+      <img src="./07-detail-transaksi.svg" alt="7. Detail Transaksi" class="screen-img">
+      <div class="screen-title">7. Detail Transaksi</div>
+      <a href="./07-detail-transaksi.svg" download class="screen-download">Download SVG</a>
+    </div>
+
+    <div class="card">
+      <img src="./08-laporan.svg" alt="8. Laporan" class="screen-img">
+      <div class="screen-title">8. Laporan</div>
+      <a href="./08-laporan.svg" download class="screen-download">Download SVG</a>
+    </div>
+
+    <div class="card">
+      <img src="./09-kategori.svg" alt="9. Kategori" class="screen-img">
+      <div class="screen-title">9. Kategori</div>
+      <a href="./09-kategori.svg" download class="screen-download">Download SVG</a>
+    </div>
+
+    <div class="card">
+      <img src="./10-pengaturan-akun.svg" alt="10. Pengaturan Akun" class="screen-img">
+      <div class="screen-title">10. Pengaturan Akun</div>
+      <a href="./10-pengaturan-akun.svg" download class="screen-download">Download SVG</a>
+    </div>
+  </div>
+
+  <div class="instructions">
+    <h3>💡 Cara Membuka & Mengedit di Figma:</h3>
+    <ol>
+      <li>Buka file proyek baru atau kanvas kerja Anda di <strong>Figma</strong>.</li>
+      <li>Buka folder <code>d:\Pagawean\SelfProject\cashbook\figma-designs\</code> di File Explorer Windows Anda.</li>
+      <li>Tarik (Drag &amp; Drop) file <strong><code>all-screens-artboard.svg</code></strong> (untuk langsung 10 frame sekaligus) atau file screen individual ke kanvas Figma Anda.</li>
+      <li>Figma akan langsung mengonversinya menjadi <strong>Frame dan Vektor Layer asli</strong> yang dapat Anda ubah warna, teks, layout, dan komponennya!</li>
+    </ol>
+  </div>
+
+</body>
+</html>

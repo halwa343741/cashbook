@@ -1,0 +1,45 @@
+<svg width="390" height="844" viewBox="0 0 390 844" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="splash-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#15803D" />
+      <stop offset="100%" stop-color="#0F5B2C" />
+    </linearGradient>
+  </defs>
+  <!-- Background -->
+  <rect width="390" height="844" rx="44" fill="url(#splash-bg)"/>
+  
+  <!-- Status Bar -->
+  <g color="#FFFFFF">
+  <g id="Status-Bar">
+    <text x="32" y="36" font-family="-apple-system, Inter, Roboto, sans-serif" font-size="14" font-weight="600" fill="currentColor">9:41</text>
+    <g transform="translate(325, 25)" fill="currentColor">
+      <!-- Wifi & Battery & Signal -->
+      <path d="M12 3c-4.97 0-9 4.03-9 9 0 2.12.74 4.07 1.97 5.61L12 22l7.03-4.39C20.26 16.07 21 14.12 21 12c0-4.97-4.03-9-9-9z" opacity="0.3" transform="scale(0.6) translate(-10, -5)"/>
+      <rect x="18" y="3" width="20" height="10" rx="3" fill="none" stroke="currentColor" stroke-width="2"/>
+      <rect x="20" y="5" width="13" height="6" rx="1.5" fill="currentColor"/>
+      <path d="M39 6v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    </g>
+  </g>
+</g>
+  
+  <!-- Logo & Title -->
+  <g id="Logo-Container" transform="translate(145, 310)">
+    <rect width="100" height="74" rx="20" fill="#FFFFFF"/>
+    <!-- Wallet Icon -->
+    <path d="M72 32H84V48H72C67.5817 48 64 44.4183 64 40C64 35.5817 67.5817 32 72 32Z" fill="#15803D"/>
+    <circle cx="73" cy="40" r="3.5" fill="#FFFFFF"/>
+    <path d="M22 22C22 17.5817 25.5817 14 30 14H76C80.4183 14 84 17.5817 84 22V28H28C24.6863 28 22 25.3137 22 22Z" fill="#22C55E"/>
+    <circle cx="34" cy="44" r="5" fill="#15803D" opacity="0.4"/>
+  </g>
+  
+  <text x="195" y="440" font-family="-apple-system, Inter, sans-serif" font-size="28" font-weight="700" fill="#FFFFFF" text-anchor="middle">Cashbook</text>
+  <text x="195" y="475" font-family="-apple-system, Inter, sans-serif" font-size="14" font-weight="400" fill="#BBF7D0" text-anchor="middle">Catat pemasukan dan pengeluaran</text>
+  <text x="195" y="495" font-family="-apple-system, Inter, sans-serif" font-size="14" font-weight="400" fill="#BBF7D0" text-anchor="middle">dengan mudah</text>
+  
+  <!-- Loading Bar -->
+  <rect x="155" y="690" width="80" height="4" rx="2" fill="rgba(255,255,255,0.3)"/>
+  <rect x="155" y="690" width="38" height="4" rx="2" fill="#FFFFFF"/>
+  
+  <!-- Home Indicator -->
+  <rect x="130" y="828" width="130" height="4" rx="2" fill="rgba(255,255,255,0.4)"/>
+</svg>

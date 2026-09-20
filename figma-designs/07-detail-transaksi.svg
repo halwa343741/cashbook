@@ -1,0 +1,61 @@
+<svg width="390" height="844" viewBox="0 0 390 844" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="390" height="844" rx="44" fill="#FAFCFB"/>
+  <g color="#1E293B">
+  <g id="Status-Bar">
+    <text x="32" y="36" font-family="-apple-system, Inter, Roboto, sans-serif" font-size="14" font-weight="600" fill="currentColor">9:41</text>
+    <g transform="translate(325, 25)" fill="currentColor">
+      <!-- Wifi & Battery & Signal -->
+      <path d="M12 3c-4.97 0-9 4.03-9 9 0 2.12.74 4.07 1.97 5.61L12 22l7.03-4.39C20.26 16.07 21 14.12 21 12c0-4.97-4.03-9-9-9z" opacity="0.3" transform="scale(0.6) translate(-10, -5)"/>
+      <rect x="18" y="3" width="20" height="10" rx="3" fill="none" stroke="currentColor" stroke-width="2"/>
+      <rect x="20" y="5" width="13" height="6" rx="1.5" fill="currentColor"/>
+      <path d="M39 6v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    </g>
+  </g>
+</g>
+  
+  <!-- Header -->
+  <g transform="translate(20, 60)">
+    <path d="M18 12H6m0 0l6-6m-6 6l6 6" stroke="#0F172A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="36" y="16" font-family="-apple-system, Inter, sans-serif" font-size="17" font-weight="600" fill="#0F172A">Detail Transaksi</text>
+  </g>
+  
+  <!-- Amount Card -->
+  <g transform="translate(20, 115)">
+    <circle cx="40" cy="40" r="26" fill="#FEE2E2"/>
+    <path d="M34 35v10m12-10v10m-8-14v14" stroke="#EF4444" stroke-width="2"/>
+    <text x="80" y="34" font-family="-apple-system, Inter, sans-serif" font-size="17" font-weight="600" fill="#0F172A">Makan Siang</text>
+    <text x="80" y="58" font-family="-apple-system, Inter, sans-serif" font-size="20" font-weight="700" fill="#EF4444">- Rp 45.000</text>
+  </g>
+  
+  <!-- Detail List -->
+  <g transform="translate(24, 210)">
+    <!-- Row 1: Kategori -->
+    <text x="0" y="20" font-family="-apple-system, Inter, sans-serif" font-size="14" font-weight="400" fill="#64748B">Kategori</text>
+    <text x="342" y="20" font-family="-apple-system, Inter, sans-serif" font-size="14" font-weight="500" fill="#0F172A" text-anchor="end">Makan &amp; Minum</text>
+    <line x1="0" y1="40" x2="342" y2="40" stroke="#F1F5F9" stroke-width="1"/>
+    
+    <!-- Row 2: Tanggal -->
+    <text x="0" y="70" font-family="-apple-system, Inter, sans-serif" font-size="14" font-weight="400" fill="#64748B">Tanggal</text>
+    <text x="342" y="70" font-family="-apple-system, Inter, sans-serif" font-size="14" font-weight="500" fill="#0F172A" text-anchor="end">12 Okt 2025, 12:30</text>
+    <line x1="0" y1="90" x2="342" y2="90" stroke="#F1F5F9" stroke-width="1"/>
+    
+    <!-- Row 3: Catatan -->
+    <text x="0" y="120" font-family="-apple-system, Inter, sans-serif" font-size="14" font-weight="400" fill="#64748B">Catatan</text>
+    <text x="342" y="120" font-family="-apple-system, Inter, sans-serif" font-size="14" font-weight="500" fill="#0F172A" text-anchor="end">Makan siang di warung</text>
+  </g>
+  
+  <!-- Action Buttons: Edit & Hapus -->
+  <g transform="translate(24, 390)">
+    <rect x="0" y="0" width="162" height="46" rx="12" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.5"/>
+    <text x="81" y="28" font-family="-apple-system, Inter, sans-serif" font-size="14" font-weight="600" fill="#0F172A" text-anchor="middle">Edit</text>
+    
+    <rect x="180" y="0" width="162" height="46" rx="12" fill="#FFFFFF" stroke="#FCA5A5" stroke-width="1.5"/>
+    <text x="261" y="28" font-family="-apple-system, Inter, sans-serif" font-size="14" font-weight="600" fill="#EF4444" text-anchor="middle">Hapus</text>
+  </g>
+  
+  
+  <g id="Home-Indicator">
+    <rect x="130" y="828" width="130" height="4" rx="2" fill="#CBD5E1"/>
+  </g>
+
+</svg>
