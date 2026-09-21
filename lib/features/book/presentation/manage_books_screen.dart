@@ -3,18 +3,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:uuid/uuid.dart';
 import '../../../core/constants/colors.dart';
 import '../../../core/localization/app_localizations.dart';
-import '../../../core/services/share_service.dart';
 import '../cubit/book_cubit.dart';
 import '../domain/models/book_model.dart';
 import '../../transaction/cubit/transaction_cubit.dart';
 
 class ManageBooksScreen extends StatefulWidget {
-  final ShareService shareService;
-
-  const ManageBooksScreen({
-    super.key,
-    required this.shareService,
-  });
+  const ManageBooksScreen({super.key});
 
   @override
   State<ManageBooksScreen> createState() => _ManageBooksScreenState();
@@ -50,6 +44,7 @@ class _ManageBooksScreenState extends State<ManageBooksScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: isDark ? AppColors.darkSurface : Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -57,22 +52,35 @@ class _ManageBooksScreenState extends State<ManageBooksScreen> {
       builder: (ctx) {
         return StatefulBuilder(
           builder: (context, setModalState) {
-            return Padding(
-              padding: EdgeInsets.only(
-                left: 24,
-                right: 24,
-                top: 24,
-                bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            return SafeArea(
+              child: Padding(
+                padding: EdgeInsets.only(
+                  left: 24,
+                  right: 24,
+                  top: 12,
+                  bottom: MediaQuery.of(ctx).viewInsets.bottom + 16,
+                ),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        bookToEdit == null ? loc.tr('manage_books') : loc.tr('update'),
+                      Center(
+                        child: Container(
+                          width: 38,
+                          height: 4,
+                          margin: const EdgeInsets.only(bottom: 12),
+                          decoration: BoxDecoration(
+                            color: isDark ? AppColors.gray700 : AppColors.gray300,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            bookToEdit == null ? loc.tr('manage_books') : loc.tr('update'),
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -194,85 +202,16 @@ class _ManageBooksScreenState extends State<ManageBooksScreen> {
                   ),
                 ],
               ),
-            );
-          },
+            ),
+          ),
         );
       },
     );
+  },
+);
   }
 
-  void _handleShareFile(BookModel book) {
-    final loc = AppLocalizations.of(context);
-    if (!book.isClosed) {
-      showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: Text(loc.tr('share_file')),
-          content: Text(loc.tr('share_file_closed_only')),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: Text(loc.tr('cancel')),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                final bookCubit = context.read<BookCubit>();
-                Navigator.pop(ctx);
-                await bookCubit.closeBook(book.id);
-                final updated = bookCubit.state.books.firstWhere((b) => b.id == book.id);
-                widget.shareService.shareBookAsFile(updated);
-              },
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary500),
-              child: Text(loc.tr('close_now'), style: const TextStyle(color: Colors.white)),
-            ),
-          ],
-        ),
-      );
-      return;
-    }
 
-    widget.shareService.shareBookAsFile(book);
-  }
-
-  void _handleShareLiveLink(BookModel book) {
-    widget.shareService.shareBookAsLiveLink(book);
-  }
-
-  void _handleToggleBookStatus(BookModel book) {
-    final loc = AppLocalizations.of(context);
-    final isClosing = !book.isClosed;
-
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(isClosing ? loc.tr('close_book_confirm_title') : loc.tr('reopen_book_confirm_title')),
-        content: Text(isClosing ? loc.tr('close_book_confirm_desc') : loc.tr('reopen_book_confirm_desc')),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(loc.tr('cancel')),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              if (isClosing) {
-                context.read<BookCubit>().closeBook(book.id);
-              } else {
-                context.read<BookCubit>().reopenBook(book.id);
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: isClosing ? AppColors.expenseRed : AppColors.primary500,
-            ),
-            child: Text(
-              isClosing ? loc.tr('close_book') : loc.tr('reopen_book'),
-              style: const TextStyle(color: Colors.white),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   void _deleteBook(BookModel book) {
     final loc = AppLocalizations.of(context);
@@ -280,9 +219,7 @@ class _ManageBooksScreenState extends State<ManageBooksScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text('${loc.tr('delete_to_trash')}?'),
-        content: Text(
-          'Buku kas "${book.name}" beserta transaksinya akan dipindahkan ke Sampah dan dapat dipulihkan kapan saja.',
-        ),
+        content: Text(loc.tr('delete_book_confirm')),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
@@ -332,7 +269,7 @@ class _ManageBooksScreenState extends State<ManageBooksScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.add_rounded),
-            tooltip: 'Tambah Buku',
+            tooltip: loc.tr('add_book'),
             onPressed: () => _openAddEditBookDialog(),
           ),
         ],
@@ -407,57 +344,6 @@ class _ManageBooksScreenState extends State<ManageBooksScreen> {
                             ),
                           ),
                         ),
-                        if (book.isClosed)
-                          Container(
-                            margin: const EdgeInsets.only(left: 6),
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: AppColors.expenseRed.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              loc.tr('status_closed'),
-                              style: const TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.expenseRed,
-                              ),
-                            ),
-                          )
-                        else
-                          Container(
-                            margin: const EdgeInsets.only(left: 6),
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary500.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              loc.tr('status_open'),
-                              style: const TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.primary500,
-                              ),
-                            ),
-                          ),
-                        if (book.isReadOnly)
-                          Container(
-                            margin: const EdgeInsets.only(left: 6),
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: AppColors.amber500.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: const Text(
-                              'Read Only',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.amber500,
-                              ),
-                            ),
-                          ),
                         if (isActive)
                           Container(
                             margin: const EdgeInsets.only(left: 6),
@@ -466,9 +352,9 @@ class _ManageBooksScreenState extends State<ManageBooksScreen> {
                               color: AppColors.blue500.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(6),
                             ),
-                            child: const Text(
-                              'Aktif',
-                              style: TextStyle(
+                            child: Text(
+                              loc.tr('active'),
+                              style: const TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600,
                                 color: AppColors.blue500,
@@ -478,11 +364,7 @@ class _ManageBooksScreenState extends State<ManageBooksScreen> {
                       ],
                     ),
                     subtitle: Text(
-                      book.isClosed && book.closedAt != null
-                          ? 'Ditutup: ${book.closedAt!.day}/${book.closedAt!.month}/${book.closedAt!.year}'
-                          : (book.sharedBy != null
-                              ? 'Dibagikan oleh: ${book.sharedBy}'
-                              : 'Dibuat: ${book.createdAt.day}/${book.createdAt.month}/${book.createdAt.year}'),
+                      '${loc.tr('created_at')}: ${book.createdAt.day}/${book.createdAt.month}/${book.createdAt.year}',
                       style: const TextStyle(fontSize: 12),
                     ),
                     onTap: () {
@@ -494,14 +376,8 @@ class _ManageBooksScreenState extends State<ManageBooksScreen> {
                         if (val == 'select') {
                           context.read<BookCubit>().selectBook(book.id);
                           context.read<TransactionCubit>().loadTransactions(book.id);
-                        } else if (val == 'toggle_status') {
-                          _handleToggleBookStatus(book);
                         } else if (val == 'edit') {
                           _openAddEditBookDialog(book);
-                        } else if (val == 'share_file') {
-                          _handleShareFile(book);
-                        } else if (val == 'share_link') {
-                          _handleShareLiveLink(book);
                         } else if (val == 'delete') {
                           _deleteBook(book);
                         }
@@ -519,61 +395,12 @@ class _ManageBooksScreenState extends State<ManageBooksScreen> {
                             ),
                           ),
                         PopupMenuItem(
-                          value: 'toggle_status',
+                          value: 'edit',
                           child: Row(
                             children: [
-                              Icon(
-                                book.isClosed ? Icons.lock_open_rounded : Icons.lock_outline_rounded,
-                                size: 18,
-                                color: book.isClosed ? AppColors.primary500 : AppColors.expenseRed,
-                              ),
+                              const Icon(Icons.edit_outlined, size: 18),
                               const SizedBox(width: 8),
-                              Text(
-                                book.isClosed ? loc.tr('reopen_book') : loc.tr('close_book'),
-                                style: TextStyle(
-                                  color: book.isClosed ? AppColors.primary500 : AppColors.expenseRed,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        if (!book.isReadOnly && !book.isClosed)
-                          PopupMenuItem(
-                            value: 'edit',
-                            child: Row(
-                              children: [
-                                const Icon(Icons.edit_outlined, size: 18),
-                                const SizedBox(width: 8),
-                                Text(loc.tr('update')),
-                              ],
-                            ),
-                          ),
-                        PopupMenuItem(
-                          value: 'share_file',
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.file_present_outlined,
-                                size: 18,
-                                color: book.isClosed ? AppColors.primary500 : AppColors.gray400,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                loc.tr('share_file'),
-                                style: TextStyle(
-                                  color: book.isClosed ? null : AppColors.gray400,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        PopupMenuItem(
-                          value: 'share_link',
-                          child: Row(
-                            children: [
-                              const Icon(Icons.link_rounded, size: 18, color: AppColors.blue500),
-                              const SizedBox(width: 8),
-                              Text(loc.tr('share_link')),
+                              Text(loc.tr('update')),
                             ],
                           ),
                         ),

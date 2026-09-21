@@ -19,6 +19,7 @@ build/
 .idea/
 *.iml
 android/.gradle
+android/.kotlin/
 android/captures/
 android/gradle/
 android/gradlew

@@ -9,6 +9,27 @@ param(
     [switch]$Release
 )
 
+# 0. Hentikan proses yang sedang berjalan sebelumnya (jika ada)
+Write-Host "[*] Memeriksa & menghentikan proses yang sedang berjalan..." -ForegroundColor Yellow
+
+# Hentikan aplikasi Cashbook Desktop jika sedang terbuka
+$cashbookProcs = Get-Process -Name "cashbook" -ErrorAction SilentlyContinue
+if ($cashbookProcs) {
+    Write-Host "  -> Menutup proses aplikasi Cashbook Desktop..." -ForegroundColor DarkYellow
+    $cashbookProcs | Stop-Process -Force -ErrorAction SilentlyContinue
+}
+
+# Hentikan background flutter/dart tools yang menggantung (mencegah startup lock)
+try {
+    $dartProcs = Get-CimInstance Win32_Process -Filter "Name = 'dart.exe'" -ErrorAction SilentlyContinue
+    foreach ($p in $dartProcs) {
+        if ($p.CommandLine -and $p.CommandLine -match "flutter_tools") {
+            Write-Host "  -> Menghentikan background Flutter tool (PID $($p.ProcessId))..." -ForegroundColor DarkYellow
+            Stop-Process -Id $p.ProcessId -Force -ErrorAction SilentlyContinue
+        }
+    }
+} catch {}
+
 # 1. Pastikan ADB ada di PATH
 $adbCmd = Get-Command adb -ErrorAction SilentlyContinue
 if (-not $adbCmd) {
@@ -110,10 +131,14 @@ function Discover-NetworkDevices {
                     $friendlyName = if ($matchedSaved) { $matchedSaved.name } else { "Android Device ($mIp)" }
                     
                     # Update port di saved devices jika portnya berubah
-                    if ($matchedSaved -and $matchedSaved.port -ne $mPort) {
-                        $matchedSaved.port = $mPort
-                        Save-Devices $savedDevs
-                    }
+                    try {
+                        if ($matchedSaved -and ($matchedSaved.PSObject.Properties.Match('port').Count -gt 0)) {
+                            if ($matchedSaved.port -ne $mPort) {
+                                $matchedSaved.port = $mPort
+                                Save-Devices $savedDevs
+                            }
+                        }
+                    } catch {}
                     
                     $foundList += [PSCustomObject]@{
                         Name = $friendlyName
@@ -239,8 +264,52 @@ if ([string]::IsNullOrWhiteSpace($targetDevice)) {
         "^[Ww]" { $targetDevice = "windows" }
         "^[Cc]" { $targetDevice = "chrome" }
         "^[Ff]" {
-            flutter devices
-            $targetDevice = Read-Host "Masukkan Device ID dari list di atas"
+            Write-Host "`n[*] Mengambil daftar perangkat dari Flutter..." -ForegroundColor Cyan
+            $flutterDevices = @()
+            $rawDevices = flutter devices 2>$null
+            foreach ($line in $rawDevices) {
+                if ($line -match '^\s*([^•]+?)\s+•\s+([^•]+?)\s+•\s+([^•]+?)\s+•\s*(.*)$') {
+                    $flutterDevices += [PSCustomObject]@{
+                        Name     = $matches[1].Trim()
+                        Id       = $matches[2].Trim()
+                        Platform = $matches[3].Trim()
+                        Info     = $matches[4].Trim()
+                    }
+                }
+            }
+
+            if ($flutterDevices.Count -gt 0) {
+                Write-Host "`n--- Perangkat Flutter Terdeteksi ---" -ForegroundColor Yellow
+                for ($k = 0; $k -lt $flutterDevices.Count; $k++) {
+                    $fd = $flutterDevices[$k]
+                    Write-Host "  [$($k + 1)] $($fd.Name) [$($fd.Platform)]" -ForegroundColor Green
+                    Write-Host "      ID: $($fd.Id)" -ForegroundColor DarkGray
+                }
+                
+                # Default preferensi perangkat mobile / wireless jika ada
+                $defaultFIdx = 1
+                for ($k = 0; $k -lt $flutterDevices.Count; $k++) {
+                    if ($flutterDevices[$k].Platform -match "android|ios" -or $flutterDevices[$k].Name -match "wireless|mobile") {
+                        $defaultFIdx = $k + 1
+                        break
+                    }
+                }
+
+                $fPick = Read-Host "`nPilih nomor perangkat [1-$($flutterDevices.Count)] (Default: $defaultFIdx)"
+                if ([string]::IsNullOrWhiteSpace($fPick)) { $fPick = "$defaultFIdx" }
+                
+                if ($fPick -match "^\d+$" -and [int]$fPick -ge 1 -and [int]$fPick -le $flutterDevices.Count) {
+                    $selectedDev = $flutterDevices[[int]$fPick - 1]
+                    $targetDevice = $selectedDev.Id
+                    Write-Host "--> Memilih: $($selectedDev.Name) ($targetDevice)`n" -ForegroundColor Green
+                } else {
+                    $targetDevice = $fPick.Trim()
+                }
+            } else {
+                Write-Host "[!] Tidak ada perangkat Flutter terdeteksi atau gagal parsing." -ForegroundColor Yellow
+                flutter devices
+                $targetDevice = Read-Host "Masukkan Device ID secara manual"
+            }
         }
         "^\d+$" {
             $selectedNum = [int]$pilihan
@@ -301,7 +370,98 @@ if ($Release) {
     $runArgs += "--release"
 }
 
-Write-Host "`n[*] Menjalankan: flutter $($runArgs -join ' ')" -ForegroundColor Green
-Write-Host "Tekan 'r' untuk Hot Reload, 'R' untuk Hot Restart, 'q' untuk Quit.`n" -ForegroundColor DarkCyan
+# Package name aplikasi (sesuai applicationId di build.gradle)
+# Mode Debug menggunakan .dev agar TIDAK MENGHAPUS aplikasi Production yang sudah terpasang di HP!
+$packageName = if ($Release) { "com.tanory.cashbook" } else { "com.tanory.cashbook.dev" }
 
-& flutter $runArgs
+$isAndroidTarget = (
+    -not [string]::IsNullOrWhiteSpace($targetDevice) -and
+    $targetDevice -ne "windows" -and
+    $targetDevice -ne "chrome" -and
+    $targetDevice -ne "edge"
+)
+
+# Khusus Android: Hanya install & jalankan di User 0 (Primary User)
+if ($isAndroidTarget) {
+    $runArgs += "--device-user=0"
+}
+
+# Bersihkan total (Fresh Install):
+# Otomatis untuk Debug (.dev). Untuk Release (Production), hanya jika switch -Clean diberikan agar data riil tidak hilang.
+$shouldClean = if ($Release) { $Clean.IsPresent } else { $true }
+
+if ($isAndroidTarget -and $shouldClean) {
+    Write-Host "`n========================================" -ForegroundColor Magenta
+    Write-Host "   BERSIHKAN dan PASANG ULANG (FRESH INSTALL)" -ForegroundColor Magenta
+    Write-Host "========================================" -ForegroundColor Magenta
+    Write-Host "[*] Package: $packageName" -ForegroundColor DarkGray
+    Write-Host "[*] Device : $targetDevice" -ForegroundColor DarkGray
+    Write-Host "[*] Target : User 0 (Primary User only)`n" -ForegroundColor DarkGray
+
+    Write-Host "[1/3] Force-stop aplikasi lama..." -ForegroundColor Yellow
+    adb -s $targetDevice shell am force-stop $packageName 2>$null
+    Start-Sleep -Milliseconds 500
+
+    Write-Host "[2/3] Clear cache dan data aplikasi..." -ForegroundColor Yellow
+    $clearResult = adb -s $targetDevice shell pm clear $packageName 2>&1
+    if ($clearResult -match "Success") {
+        Write-Host "      -> Cache dan data berhasil dihapus." -ForegroundColor Green
+    } else {
+        Write-Host "      -> Cache sudah bersih." -ForegroundColor DarkYellow
+    }
+
+    Write-Host "[3/3] Uninstall aplikasi lama dari semua user profile..." -ForegroundColor Yellow
+    # Deteksi semua user di perangkat (User 0, 95 (Dual Messenger), 999 (Dual App), dsb.)
+    $usersOutput = adb -s $targetDevice shell pm list users 2>$null
+    $allUserIds = @()
+    if ($usersOutput) {
+        $allUserIds = [regex]::Matches($usersOutput, 'UserInfo\{(\d+):') | ForEach-Object { $_.Groups[1].Value }
+    }
+    if (-not $allUserIds -or $allUserIds.Count -eq 0) {
+        $allUserIds = @("0", "95", "999", "10", "11", "12")
+    }
+
+    foreach ($uId in $allUserIds) {
+        if ($uId -ne "0") {
+            Write-Host "      -> Membersihkan dari User Profile $uId (Dual App / Work Profile)..." -ForegroundColor DarkYellow
+        }
+        adb -s $targetDevice shell pm uninstall --user $uId $packageName 2>$null
+    }
+
+    $uninstallResult = adb -s $targetDevice uninstall $packageName 2>&1
+    if ($uninstallResult -match "Success") {
+        Write-Host "      -> Aplikasi berhasil diuninstall total." -ForegroundColor Green
+    } else {
+        Write-Host "      -> Aplikasi bersih / tidak terpasang." -ForegroundColor DarkYellow
+    }
+
+    Write-Host "`n[OK] Siap install fresh hanya ke User 0!`n" -ForegroundColor Green
+
+    # Jalankan background watcher untuk mencopot instalasi otomatis pada user non-0 (Dual Messenger Samsung)
+    $cleanupScript = {
+        param($dev, $pkg)
+        Start-Sleep -Seconds 12
+        for ($i = 0; $i -lt 10; $i++) {
+            $usersRaw = adb -s $dev shell pm list users 2>$null
+            $otherUsers = [regex]::Matches($usersRaw, 'UserInfo\{(\d+):') | ForEach-Object { $_.Groups[1].Value } | Where-Object { $_ -ne "0" }
+            foreach ($u in $otherUsers) {
+                $chk = adb -s $dev shell pm list packages --user $u $pkg 2>$null
+                if ($chk -match $pkg) {
+                    adb -s $dev shell pm uninstall --user $u $pkg 2>$null
+                }
+            }
+            Start-Sleep -Seconds 5
+        }
+    }
+    Start-Job -ScriptBlock $cleanupScript -ArgumentList $targetDevice, $packageName | Out-Null
+}
+
+Write-Host "[*] Menjalankan: flutter $($runArgs -join ' ')" -ForegroundColor Green
+Write-Host "Tekan 'r' Hot Reload, 'R' Hot Restart, 'q' Quit.`n" -ForegroundColor DarkCyan
+
+try {
+    & flutter $runArgs
+} finally {
+    Get-Job | Stop-Job -ErrorAction SilentlyContinue
+    Get-Job | Remove-Job -ErrorAction SilentlyContinue
+}

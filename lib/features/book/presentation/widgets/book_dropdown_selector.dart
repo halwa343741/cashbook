@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/colors.dart';
+import '../../../../core/localization/app_localizations.dart';
 import '../../cubit/book_cubit.dart';
 import '../../domain/models/book_model.dart';
 import '../../../transaction/cubit/transaction_cubit.dart';
@@ -30,9 +31,11 @@ class BookDropdownSelector extends StatelessWidget {
 
   void _showBookPicker(BuildContext context, List<BookModel> books, String? activeId) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final loc = AppLocalizations.of(context);
 
     showModalBottomSheet(
       context: context,
+      useSafeArea: true,
       backgroundColor: isDark ? AppColors.darkSurface : Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -51,7 +54,7 @@ class BookDropdownSelector extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'Pilih Buku Kas',
+                        loc.tr('select_book'),
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -64,7 +67,7 @@ class BookDropdownSelector extends StatelessWidget {
                           context.push('/manage-books');
                         },
                         icon: const Icon(Icons.settings_outlined, size: 18),
-                        label: const Text('Kelola'),
+                        label: Text(loc.tr('manage')),
                       ),
                     ],
                   ),
@@ -77,7 +80,7 @@ class BookDropdownSelector extends StatelessWidget {
                   child: ListView.separated(
                     shrinkWrap: true,
                     itemCount: books.length,
-                    separatorBuilder: (_, __) => const Divider(height: 1),
+                    separatorBuilder: (_, __) => Divider(height: 1, color: Theme.of(context).dividerColor),
                     itemBuilder: (context, index) {
                       final book = books[index];
                       final isSelected = book.id == activeId;
@@ -96,50 +99,12 @@ class BookDropdownSelector extends StatelessWidget {
                           ),
                           child: Icon(_getIconData(book.icon), color: color, size: 22),
                         ),
-                        title: Row(
-                          children: [
-                            Text(
-                              book.name,
-                              style: TextStyle(
-                                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                                color: isDark ? Colors.white : AppColors.gray900,
-                              ),
-                            ),
-                            if (book.isClosed)
-                              Container(
-                                margin: const EdgeInsets.only(left: 8),
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: AppColors.expenseRed.withValues(alpha: 0.15),
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: const Text(
-                                  'Ditutup',
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppColors.expenseRed,
-                                  ),
-                                ),
-                              )
-                            else if (book.isReadOnly)
-                              Container(
-                                margin: const EdgeInsets.only(left: 8),
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: AppColors.amber500.withValues(alpha: 0.15),
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: const Text(
-                                  'Read Only',
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppColors.amber500,
-                                  ),
-                                ),
-                              ),
-                          ],
+                        title: Text(
+                          book.name,
+                          style: TextStyle(
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                            color: isDark ? Colors.white : AppColors.gray900,
+                          ),
                         ),
                         trailing: isSelected
                             ? const Icon(Icons.check_circle_rounded, color: AppColors.primary500)
@@ -211,23 +176,7 @@ class BookDropdownSelector extends StatelessWidget {
                       ),
                     ),
                   ),
-                  if (activeBook.isReadOnly)
-                    Container(
-                      margin: const EdgeInsets.only(left: 6),
-                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                      decoration: BoxDecoration(
-                        color: AppColors.amber500.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: const Text(
-                        'R/O',
-                        style: TextStyle(
-                          fontSize: 9,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.amber500,
-                        ),
-                      ),
-                    ),
+
                   const SizedBox(width: 6),
                   Icon(
                     Icons.keyboard_arrow_down_rounded,

@@ -2,88 +2,38 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/colors.dart';
 import '../../../core/database/local_storage_service.dart';
-import '../../../core/services/google_drive_service.dart';
+import '../../../core/localization/app_localizations.dart';
 
-class LoginScreen extends StatefulWidget {
-  final GoogleDriveService driveService;
+class LoginScreen extends StatelessWidget {
   final LocalStorageService storage;
 
   const LoginScreen({
     super.key,
-    required this.driveService,
     required this.storage,
   });
 
-  @override
-  State<LoginScreen> createState() => _LoginScreenState();
-}
-
-class _LoginScreenState extends State<LoginScreen> {
-  bool _isLoading = false;
-  String? _errorMessage;
-
-  Future<void> _handleGoogleSignIn() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
-
-    try {
-      final account = await widget.driveService.signIn();
-      if (account != null && mounted) {
-        // Try syncing / pulling data from Google Drive
-        try {
-          await widget.driveService.syncWithDrive(widget.storage);
-        } catch (_) {
-          // Sync error shouldn't block login if offline
-        }
-
-        if (!mounted) return;
-
-        final books = widget.storage.getBooks();
-        if (books.isEmpty) {
-          context.go('/create-initial-book');
-        } else {
-          context.go('/home');
-        }
-      } else if (account == null && mounted) {
-        setState(() {
-          _errorMessage =
-              'Google Sign-In dibatalkan atau SHA-1 belum terdaftar di Google Cloud Console. Anda dapat memilih "Lanjutkan Offline" di bawah.';
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        final errStr = e.toString();
-        if (errStr.contains('10') || errStr.contains('sign_in_failed') || errStr.contains('12500')) {
-          _errorMessage =
-              'Google Sign-In belum terhubung ke Google Cloud Console (SHA-1). Anda bisa langsung masuk dengan tombol "Lanjutkan Offline" di bawah.';
-        } else {
-          _errorMessage = 'Gagal masuk dengan Google: $e';
-        }
-        setState(() {});
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
+  void _handleStart(BuildContext context) {
+    context.go('/create-initial-book');
   }
 
-  void _handleContinueOffline() {
-    final books = widget.storage.getBooks();
-    if (books.isEmpty) {
-      context.go('/create-initial-book');
-    } else {
-      context.go('/home');
-    }
+  void _handleRestore(BuildContext context) {
+    // TODO: Implement Android SAF file picker to restore backup
+    // file_picker: FilePicker.platform.pickFiles(type: FileType.any)
+    // -> read file -> LocalStorageService.restoreFromFile() -> /home
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('Fitur restore sedang dalam pengembangan.'),
+        backgroundColor: AppColors.primary500,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final loc = AppLocalizations.of(context);
 
     return Scaffold(
       backgroundColor: isDark ? AppColors.darkBackground : AppColors.lightBackground,
@@ -94,29 +44,31 @@ class _LoginScreenState extends State<LoginScreen> {
             children: [
               const Spacer(flex: 2),
               // App Logo / Icon
-              Container(
-                width: 96,
-                height: 96,
-                decoration: BoxDecoration(
-                  color: AppColors.primary500,
-                  borderRadius: BorderRadius.circular(28),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.primary500.withValues(alpha: 0.35),
-                      blurRadius: 24,
-                      offset: const Offset(0, 12),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(24),
+                child: Image.asset(
+                  'assets/images/app_logo.png',
+                  width: 96,
+                  height: 96,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    width: 96,
+                    height: 96,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary500,
+                      borderRadius: BorderRadius.circular(24),
                     ),
-                  ],
-                ),
-                child: const Icon(
-                  Icons.account_balance_wallet_rounded,
-                  size: 52,
-                  color: Colors.white,
+                    child: const Icon(
+                      Icons.account_balance_wallet_rounded,
+                      size: 52,
+                      color: Colors.white,
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(height: 28),
               Text(
-                'Selamat Datang di Cashbook',
+                loc.tr('welcome_title'),
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 24,
@@ -127,7 +79,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 12),
               Text(
-                'Kelola keuangan pribadi atau bisnis Anda secara terorganisir. 100% Gratis, aman, dan tersinkronisasi langsung ke Google Drive pribadi Anda.',
+                loc.tr('welcome_desc'),
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 14,
@@ -136,103 +88,51 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
               const Spacer(flex: 3),
-              if (_errorMessage != null)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 16.0),
-                  child: Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: AppColors.expenseRed.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.error_outline_rounded,
-                            color: AppColors.expenseRed, size: 20),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            _errorMessage!,
-                            style: const TextStyle(
-                              color: AppColors.expenseRed,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              // Google Sign In Button
+              // Mulai Menggunakan Cashbook Button
               SizedBox(
                 width: double.infinity,
                 height: 54,
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _handleGoogleSignIn,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: isDark ? AppColors.darkSurface : Colors.white,
-                    foregroundColor: isDark ? Colors.white : AppColors.gray800,
-                    elevation: 2,
-                    shadowColor: Colors.black.withValues(alpha: 0.1),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      side: BorderSide(
-                        color: isDark ? AppColors.gray700 : AppColors.gray200,
-                      ),
+                child: ElevatedButton.icon(
+                  onPressed: () => _handleStart(context),
+                  icon: const Icon(Icons.rocket_launch_rounded, size: 20),
+                  label: Text(
+                    loc.tr('get_started'),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
-                  child: _isLoading
-                      ? const SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              AppColors.primary500,
-                            ),
-                          ),
-                        )
-                      : Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Image.network(
-                              'https://www.gstatic.com/images/branding/product/2x/googleg_48dp.png',
-                              width: 22,
-                              height: 22,
-                              errorBuilder: (context, error, stackTrace) =>
-                                  const Icon(Icons.g_mobiledata, size: 28, color: Colors.blue),
-                            ),
-                            const SizedBox(width: 12),
-                            const Text(
-                              'Masuk dengan Google',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary500,
+                    foregroundColor: Colors.white,
+                    elevation: 4,
+                    shadowColor: AppColors.primary500.withValues(alpha: 0.4),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(height: 12),
-              // Continue Offline / Local Mode Button
+              // Restore from Backup Button
               SizedBox(
                 width: double.infinity,
                 height: 50,
                 child: OutlinedButton.icon(
-                  onPressed: _isLoading ? null : _handleContinueOffline,
-                  icon: const Icon(Icons.offline_pin_outlined, size: 20),
-                  label: const Text(
-                    'Lanjutkan Offline (Mode Lokal)',
-                    style: TextStyle(
+                  onPressed: () => _handleRestore(context),
+                  icon: const Icon(Icons.restore_rounded, size: 20),
+                  label: Text(
+                    loc.tr('restore_from_backup'),
+                    style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: isDark ? Colors.white : AppColors.primary,
+                    foregroundColor: isDark ? Colors.white : AppColors.gray800,
                     side: BorderSide(
-                      color: isDark ? AppColors.gray700 : AppColors.primary.withValues(alpha: 0.4),
+                      color: isDark ? AppColors.gray700 : AppColors.gray300,
+                      width: 1,
                     ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
@@ -241,7 +141,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-              // Serverless badge
+              // Local & Secure badge
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -252,7 +152,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(width: 6),
                   Text(
-                    'Privasi terjaga, tanpa server perantara pihak ketiga',
+                    loc.tr('local_secure_badge'),
                     style: TextStyle(
                       fontSize: 12,
                       color: isDark ? AppColors.gray500 : AppColors.gray500,

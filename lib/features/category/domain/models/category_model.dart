@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 enum CategoryType { income, expense }
 
 class CategoryModel {
@@ -9,12 +11,13 @@ class CategoryModel {
 
   CategoryModel({
     required this.id,
-    required this.name,
+    required String name,
     dynamic type,
     required this.icon,
     int? colorValue,
     String? color,
-  })  : type = type is CategoryType
+  })  : name = capitalizeWords(name),
+        type = type is CategoryType
             ? type
             : (type == 'income' ? CategoryType.income : CategoryType.expense),
         colorValue = colorValue ??
@@ -24,6 +27,33 @@ class CategoryModel {
 
   String get color =>
       '#${(colorValue & 0xFFFFFF).toRadixString(16).padLeft(6, '0').toUpperCase()}';
+
+  static String capitalizeWords(String input) {
+    final trimmed = input.trim();
+    if (trimmed.isEmpty) return '';
+    return trimmed.split(RegExp(r'\s+')).map((word) {
+      if (word.isEmpty) return '';
+      return word[0].toUpperCase() + (word.length > 1 ? word.substring(1) : '');
+    }).join(' ');
+  }
+
+  CategoryModel copyWith({
+    String? id,
+    String? name,
+    dynamic type,
+    String? icon,
+    int? colorValue,
+    String? color,
+  }) {
+    return CategoryModel(
+      id: id ?? this.id,
+      name: name != null ? CategoryModel.capitalizeWords(name) : this.name,
+      type: type ?? this.type,
+      icon: icon ?? this.icon,
+      colorValue: colorValue ?? this.colorValue,
+      color: color,
+    );
+  }
 
   Map<String, dynamic> toJson() {
     return {
@@ -66,8 +96,52 @@ class CategoryModel {
       CategoryModel(id: 'cat_kesehatan', name: 'Kesehatan', type: CategoryType.expense, icon: 'heart', colorValue: 0xFF3B82F6),
       CategoryModel(id: 'cat_pendidikan', name: 'Pendidikan', type: CategoryType.expense, icon: 'book', colorValue: 0xFF6366F1),
       CategoryModel(id: 'cat_pulsa', name: 'Hiburan & Pulsa', type: CategoryType.expense, icon: 'smartphone', colorValue: 0xFFEC4899),
-      CategoryModel(id: 'cat_tagihan', name: 'Tagihan & Utilitas', type: CategoryType.expense, icon: 'file-text', colorValue: 0xFF0EA5E9),
       CategoryModel(id: 'cat_ex_lainnya', name: 'Lainnya', type: CategoryType.expense, icon: 'more-horizontal', colorValue: 0xFF64748B),
     ];
+  }
+
+  static IconData getIconData(String iconName) {
+    switch (iconName) {
+      case 'wallet':
+        return Icons.account_balance_wallet_rounded;
+      case 'briefcase':
+        return Icons.work_rounded;
+      case 'shopping-bag':
+        return Icons.shopping_bag_rounded;
+      case 'shopping-cart':
+        return Icons.shopping_cart_rounded;
+      case 'food':
+      case 'utensils':
+        return Icons.restaurant_rounded;
+      case 'car':
+        return Icons.directions_car_rounded;
+      case 'medical':
+      case 'heart':
+      case 'heart-pulse':
+        return Icons.medical_services_rounded;
+      case 'graduation-cap':
+      case 'book':
+        return Icons.school_rounded;
+      case 'trending-up':
+        return Icons.trending_up_rounded;
+      case 'store':
+        return Icons.store_rounded;
+      case 'gift':
+        return Icons.card_giftcard_rounded;
+      case 'smartphone':
+        return Icons.phone_android_rounded;
+      case 'receipt':
+      case 'file-text':
+        return Icons.receipt_long_rounded;
+      case 'film':
+        return Icons.movie_rounded;
+      case 'coin':
+        return Icons.monetization_on_rounded;
+      case 'plus-circle':
+        return Icons.add_circle_outline_rounded;
+      case 'tag':
+      default:
+        return Icons.label_rounded;
+    }
   }
 }

@@ -158,4 +158,13 @@ class TransactionCubit extends Cubit<TransactionState> {
       emit(TransactionError(e.toString()));
     }
   }
+
+  Future<void> emptyTrash() async {
+    try {
+      await _storage.emptyTrash();
+      loadTransactions(_currentBookId, filter: _currentFilter);
+    } catch (e) {
+      emit(TransactionError(e.toString()));
+    }
+  }
 }

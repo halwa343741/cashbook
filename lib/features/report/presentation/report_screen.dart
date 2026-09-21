@@ -8,7 +8,6 @@ import '../../../core/services/excel_export_service.dart';
 import '../../../core/services/pdf_export_service.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../book/cubit/book_cubit.dart';
-import '../../book/presentation/widgets/book_dropdown_selector.dart';
 import '../../transaction/domain/models/transaction_model.dart';
 
 class ReportScreen extends StatefulWidget {
@@ -42,7 +41,10 @@ class _ReportScreenState extends State<ReportScreen> {
     final now = DateTime.now();
     setState(() {
       _activeTab = period;
-      if (period == 'this_month') {
+      if (period == 'all') {
+        _startDate = DateTime(2000, 1, 1);
+        _endDate = DateTime(2100, 1, 1);
+      } else if (period == 'this_month') {
         _startDate = DateTime(now.year, now.month, 1);
         _endDate = now;
       } else if (period == 'last_month') {
@@ -74,6 +76,7 @@ class _ReportScreenState extends State<ReportScreen> {
 
   List<TransactionModel> _getFilteredTransactions(String? bookId) {
     final all = widget.storage.getTransactions(bookId: bookId);
+    if (_activeTab == 'all') return all;
     return all.where((t) {
       final date = DateTime(t.transactionDate.year, t.transactionDate.month, t.transactionDate.day);
       final start = DateTime(_startDate.year, _startDate.month, _startDate.day);
@@ -114,11 +117,14 @@ class _ReportScreenState extends State<ReportScreen> {
 
         double totalIncome = 0;
         double totalExpense = 0;
+        final Map<String, double> categoryIncomes = {};
         final Map<String, double> categoryExpenses = {};
 
         for (final t in transactions) {
           if (t.isIncome) {
             totalIncome += t.amount;
+            categoryIncomes[t.categoryName] =
+                (categoryIncomes[t.categoryName] ?? 0) + t.amount;
           } else {
             totalExpense += t.amount;
             categoryExpenses[t.categoryName] =
@@ -132,13 +138,6 @@ class _ReportScreenState extends State<ReportScreen> {
           backgroundColor: isDark ? AppColors.darkBackground : AppColors.lightBackground,
           appBar: AppBar(
             title: Text(loc.tr('financial_report')),
-            bottom: const PreferredSize(
-              preferredSize: Size.fromHeight(40),
-              child: Padding(
-                padding: EdgeInsets.only(bottom: 8.0),
-                child: BookDropdownSelector(),
-              ),
-            ),
             actions: [
               IconButton(
                 icon: const Icon(Icons.picture_as_pdf_outlined),
@@ -162,6 +161,8 @@ class _ReportScreenState extends State<ReportScreen> {
                   scrollDirection: Axis.horizontal,
                   child: Row(
                     children: [
+                      _buildPeriodChip('all', loc.tr('all'), isDark),
+                      const SizedBox(width: 8),
                       _buildPeriodChip('this_month', loc.tr('this_month'), isDark),
                       const SizedBox(width: 8),
                       _buildPeriodChip('last_month', loc.tr('last_month'), isDark),
@@ -174,12 +175,21 @@ class _ReportScreenState extends State<ReportScreen> {
                             ? '${_startDate.day}/${_startDate.month} - ${_endDate.day}/${_endDate.month}'
                             : loc.tr('custom_range')),
                         backgroundColor: _activeTab == 'custom'
-                            ? AppColors.primary500.withValues(alpha: 0.2)
-                            : (isDark ? AppColors.darkSurface : AppColors.gray100),
+                            ? AppColors.primary500.withValues(alpha: 0.15)
+                            : (isDark ? AppColors.darkSurface : Colors.white),
+                        side: BorderSide(
+                          color: _activeTab == 'custom'
+                              ? AppColors.primary500
+                              : (isDark ? AppColors.gray800 : AppColors.gray200),
+                          width: _activeTab == 'custom' ? 1.2 : 1,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                         labelStyle: TextStyle(
                           fontSize: 12,
                           fontWeight:
-                              _activeTab == 'custom' ? FontWeight.bold : FontWeight.normal,
+                              _activeTab == 'custom' ? FontWeight.bold : FontWeight.w500,
                           color: _activeTab == 'custom'
                               ? AppColors.primary500
                               : (isDark ? AppColors.gray300 : AppColors.gray700),
@@ -227,7 +237,7 @@ class _ReportScreenState extends State<ReportScreen> {
                           ),
                         ],
                       ),
-                      const Divider(height: 24),
+                      Divider(height: 24, color: Theme.of(context).dividerColor),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -341,96 +351,29 @@ class _ReportScreenState extends State<ReportScreen> {
 
                 const SizedBox(height: 24),
 
-                // Expense by Category Breakdown
-                Text(
-                  loc.tr('expense_by_category'),
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: isDark ? Colors.white : AppColors.gray900,
-                  ),
+                // Income by Category Breakdown
+                _buildCategoryBreakdownList(
+                  title: loc.tr('income_by_category'),
+                  categoryData: categoryIncomes,
+                  totalAmount: totalIncome,
+                  color: AppColors.incomeGreen,
+                  isDark: isDark,
+                  loc: loc,
+                  localeCode: localeCode,
                 ),
-                const SizedBox(height: 12),
-                if (categoryExpenses.isEmpty)
-                  Container(
-                    padding: const EdgeInsets.all(24),
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: isDark ? AppColors.darkSurface : Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Text(
-                      loc.tr('no_report_data'),
-                      style: TextStyle(
-                        color: isDark ? AppColors.gray400 : AppColors.gray500,
-                      ),
-                    ),
-                  )
-                else
-                  ListView.separated(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: categoryExpenses.keys.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 8),
-                    itemBuilder: (context, index) {
-                      final catName = categoryExpenses.keys.elementAt(index);
-                      final amt = categoryExpenses[catName]!;
-                      final percentage =
-                          totalExpense > 0 ? (amt / totalExpense) * 100 : 0.0;
 
-                      return Container(
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: isDark ? AppColors.darkSurface : Colors.white,
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        child: Column(
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  catName,
-                                  style: const TextStyle(fontWeight: FontWeight.w600),
-                                ),
-                                Text(
-                                  CurrencyFormatter.format(amt, localeCode: localeCode),
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: AppColors.expenseRed,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(4),
-                              child: LinearProgressIndicator(
-                                value: totalExpense > 0 ? amt / totalExpense : 0,
-                                backgroundColor: isDark
-                                    ? AppColors.gray800
-                                    : AppColors.gray200,
-                                valueColor: const AlwaysStoppedAnimation<Color>(
-                                    AppColors.expenseRed),
-                                minHeight: 6,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: Text(
-                                '${percentage.toStringAsFixed(1)}%',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: isDark ? AppColors.gray400 : AppColors.gray500,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
+                const SizedBox(height: 24),
+
+                // Expense by Category Breakdown
+                _buildCategoryBreakdownList(
+                  title: loc.tr('expense_by_category'),
+                  categoryData: categoryExpenses,
+                  totalAmount: totalExpense,
+                  color: AppColors.expenseRed,
+                  isDark: isDark,
+                  loc: loc,
+                  localeCode: localeCode,
+                ),
 
                 const SizedBox(height: 32),
               ],
@@ -449,10 +392,21 @@ class _ReportScreenState extends State<ReportScreen> {
       onSelected: (selected) {
         if (selected) _setPeriod(key);
       },
-      selectedColor: AppColors.primary500.withValues(alpha: 0.2),
+      showCheckmark: false,
+      selectedColor: AppColors.primary500.withValues(alpha: 0.15),
+      backgroundColor: isDark ? AppColors.darkSurface : Colors.white,
+      side: BorderSide(
+        color: isSelected
+            ? AppColors.primary500
+            : (isDark ? AppColors.gray800 : AppColors.gray200),
+        width: isSelected ? 1.2 : 1,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10),
+      ),
       labelStyle: TextStyle(
         fontSize: 12,
-        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+        fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
         color: isSelected
             ? AppColors.primary500
             : (isDark ? AppColors.gray400 : AppColors.gray700),
@@ -493,6 +447,114 @@ class _ReportScreenState extends State<ReportScreen> {
             ),
           ],
         ),
+      ],
+    );
+  }
+
+  Widget _buildCategoryBreakdownList({
+    required String title,
+    required Map<String, double> categoryData,
+    required double totalAmount,
+    required Color color,
+    required bool isDark,
+    required AppLocalizations loc,
+    required String localeCode,
+  }) {
+    final sortedKeys = categoryData.keys.toList()
+      ..sort((a, b) => categoryData[b]!.compareTo(categoryData[a]!));
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: isDark ? Colors.white : AppColors.gray900,
+          ),
+        ),
+        const SizedBox(height: 12),
+        if (categoryData.isEmpty)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(24),
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.darkSurface : Colors.white,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Text(
+              loc.tr('no_report_data'),
+              style: TextStyle(
+                color: isDark ? AppColors.gray400 : AppColors.gray500,
+              ),
+            ),
+          )
+        else
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: sortedKeys.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 8),
+            itemBuilder: (context, index) {
+              final catName = sortedKeys[index];
+              final amt = categoryData[catName]!;
+              final percentage =
+                  totalAmount > 0 ? (amt / totalAmount) * 100 : 0.0;
+
+              return Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.darkSurface : Colors.white,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          catName,
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        Text(
+                          CurrencyFormatter.format(amt, localeCode: localeCode),
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: color,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: LinearProgressIndicator(
+                        value: totalAmount > 0 ? amt / totalAmount : 0,
+                        backgroundColor: isDark
+                            ? AppColors.gray800
+                            : AppColors.gray200,
+                        valueColor: AlwaysStoppedAnimation<Color>(color),
+                        minHeight: 6,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: Text(
+                        '${percentage.toStringAsFixed(1)}%',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: isDark ? AppColors.gray400 : AppColors.gray500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
       ],
     );
   }

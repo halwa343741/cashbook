@@ -8,8 +8,9 @@ import '../../../core/utils/currency_formatter.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../book/cubit/book_cubit.dart';
 import '../cubit/transaction_cubit.dart';
+import '../domain/models/transaction_model.dart';
 
-class TransactionDetailScreen extends StatelessWidget {
+class TransactionDetailScreen extends StatefulWidget {
   final String transactionId;
   final LocalStorageService storage;
 
@@ -20,11 +21,49 @@ class TransactionDetailScreen extends StatelessWidget {
   });
 
   @override
+  State<TransactionDetailScreen> createState() => _TransactionDetailScreenState();
+}
+
+class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
+  Future<void> _editTransaction(BuildContext context, TransactionModel tx) async {
+    final route = tx.isIncome ? '/add-income' : '/add-expense';
+    final result = await context.push(route, extra: tx);
+    if (result == true && mounted) {
+      setState(() {});
+    }
+  }
+
+  void _confirmDelete(BuildContext context, AppLocalizations loc) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(loc.tr('delete_to_trash')),
+        content: Text(loc.tr('delete_confirm_desc')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(loc.tr('cancel')),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              context.read<TransactionCubit>().softDeleteTransaction(widget.transactionId);
+              context.pop();
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.expenseRed),
+            child: Text(loc.tr('delete_to_trash'), style: const TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final loc = AppLocalizations.of(context);
     final localeCode = Localizations.localeOf(context).languageCode;
-    final tx = storage.getTransactionById(transactionId);
+    final tx = widget.storage.getTransactionById(widget.transactionId);
 
     if (tx == null) {
       return Scaffold(
@@ -44,14 +83,18 @@ class TransactionDetailScreen extends StatelessWidget {
       appBar: AppBar(
         title: Text(loc.tr('detail_transaction')),
         actions: [
-          if (!isReadOnly)
+          if (!isReadOnly) ...[
+            IconButton(
+              icon: const Icon(Icons.edit_outlined),
+              tooltip: loc.tr('edit'),
+              onPressed: () => _editTransaction(context, tx),
+            ),
             IconButton(
               icon: const Icon(Icons.delete_outline_rounded, color: AppColors.expenseRed),
               tooltip: loc.tr('delete_to_trash'),
-              onPressed: () {
-                _confirmDelete(context, loc);
-              },
+              onPressed: () => _confirmDelete(context, loc),
             ),
+          ],
         ],
       ),
       body: SingleChildScrollView(
@@ -134,7 +177,7 @@ class TransactionDetailScreen extends StatelessWidget {
                     value: tx.categoryName,
                     isDark: isDark,
                   ),
-                  const Divider(height: 24),
+                  Divider(height: 24, color: Theme.of(context).dividerColor),
                   _buildDetailRow(
                     context: context,
                     icon: Icons.notes_rounded,
@@ -142,44 +185,57 @@ class TransactionDetailScreen extends StatelessWidget {
                     value: tx.note.isNotEmpty ? tx.note : '-',
                     isDark: isDark,
                   ),
-                  const Divider(height: 24),
+                  Divider(height: 24, color: Theme.of(context).dividerColor),
                   _buildDetailRow(
                     context: context,
                     icon: Icons.calendar_today_outlined,
                     label: loc.tr('transaction_date'),
-                    value: DateFormatter.formatWithTime(tx.createdAt, localeCode),
+                    value: DateFormatter.formatWithTime(tx.transactionDate, localeCode),
                     isDark: isDark,
                   ),
                 ],
               ),
             ),
+
+            const SizedBox(height: 24),
+
+            // Action Buttons
+            if (!isReadOnly)
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => _editTransaction(context, tx),
+                      icon: const Icon(Icons.edit_outlined, size: 18),
+                      label: Text(loc.tr('edit')),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () => _confirmDelete(context, loc),
+                      icon: const Icon(Icons.delete_outline_rounded, size: 18),
+                      label: Text(loc.tr('delete')),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.expenseRed,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
           ],
         ),
-      ),
-    );
-  }
-
-  void _confirmDelete(BuildContext context, AppLocalizations loc) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(loc.tr('delete_to_trash')),
-        content: Text(loc.tr('delete_confirm_desc')),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(loc.tr('cancel')),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              context.read<TransactionCubit>().softDeleteTransaction(transactionId);
-              context.pop();
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.expenseRed),
-            child: Text(loc.tr('delete_to_trash'), style: const TextStyle(color: Colors.white)),
-          ),
-        ],
       ),
     );
   }

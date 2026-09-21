@@ -192,71 +192,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   const BookDropdownSelector(),
                   const SizedBox(height: 16),
 
-                  // Closed / Read-Only Banner if active book is closed or read-only
-                  BlocBuilder<BookCubit, BookState>(
-                    builder: (context, state) {
-                      if (state is BookLoaded) {
-                        final book = state.activeBook;
-                        if (book?.isClosed == true) {
-                          return Container(
-                            margin: const EdgeInsets.only(bottom: 16),
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                            decoration: BoxDecoration(
-                              color: AppColors.expenseRed.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: AppColors.expenseRed.withValues(alpha: 0.3)),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.lock_rounded,
-                                    color: AppColors.expenseRed, size: 20),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    loc.tr('closed_book_banner'),
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: isDark ? Colors.red[200] : Colors.red[900],
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        } else if (book?.isReadOnly == true) {
-                          return Container(
-                            margin: const EdgeInsets.only(bottom: 16),
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                            decoration: BoxDecoration(
-                              color: AppColors.amber500.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: AppColors.amber500.withValues(alpha: 0.3)),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.visibility_rounded,
-                                    color: AppColors.amber500, size: 20),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    loc.tr('read_only_banner'),
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: isDark ? Colors.amber[200] : Colors.amber[900],
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        }
-                      }
-                      return const SizedBox.shrink();
-                    },
-                  ),
-
                   // 3. BALANCE CARD
                   BlocBuilder<TransactionCubit, TransactionState>(
                     builder: (context, state) {
@@ -299,8 +234,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                 Text(
                                   loc.tr('total_balance'),
                                   style: const TextStyle(
-                                    color: Colors.white70,
-                                    fontSize: 13,
+                                    color: Colors.white,
+                                    fontSize: 14,
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
@@ -314,8 +249,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                     _showBalance
                                         ? Icons.visibility_outlined
                                         : Icons.visibility_off_outlined,
-                                    color: Colors.white70,
-                                    size: 20,
+                                    color: Colors.white,
+                                    size: 22,
                                   ),
                                 ),
                               ],
@@ -345,22 +280,30 @@ class _HomeScreenState extends State<HomeScreen> {
                                     child: Row(
                                       children: [
                                         Container(
-                                          padding: const EdgeInsets.all(6),
+                                          padding: const EdgeInsets.all(7),
                                           decoration: BoxDecoration(
-                                            color: Colors.white.withValues(alpha: 0.2),
+                                            color: const Color(0xFF00C853).withValues(alpha: 0.75),
                                             shape: BoxShape.circle,
                                           ),
-                                          child: const Icon(Icons.arrow_downward_rounded,
-                                              size: 14, color: Colors.white),
+                                          child: const Icon(
+                                            Icons.arrow_downward_rounded,
+                                            size: 16,
+                                            color: Colors.white,
+                                          ),
                                         ),
                                         const SizedBox(width: 8),
                                         Expanded(
                                           child: Column(
                                             crossAxisAlignment: CrossAxisAlignment.start,
                                             children: [
-                                              Text(loc.tr('cash_in'),
-                                                  style: const TextStyle(
-                                                      color: Colors.white70, fontSize: 11)),
+                                              Text(
+                                                loc.tr('cash_in'),
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                              ),
                                               Text(
                                                 _showBalance
                                                     ? CurrencyFormatter.format(income,
@@ -370,7 +313,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                                 style: const TextStyle(
                                                   color: Colors.white,
                                                   fontWeight: FontWeight.bold,
-                                                  fontSize: 13,
+                                                  fontSize: 14,
                                                 ),
                                               ),
                                             ],
@@ -382,29 +325,37 @@ class _HomeScreenState extends State<HomeScreen> {
                                   Container(
                                     height: 24,
                                     width: 1,
-                                    color: Colors.white.withValues(alpha: 0.2),
+                                    color: Colors.white.withValues(alpha: 0.25),
                                     margin: const EdgeInsets.symmetric(horizontal: 8),
                                   ),
                                   Expanded(
                                     child: Row(
                                       children: [
                                         Container(
-                                          padding: const EdgeInsets.all(6),
+                                          padding: const EdgeInsets.all(7),
                                           decoration: BoxDecoration(
-                                            color: Colors.white.withValues(alpha: 0.2),
+                                            color: const Color(0xFFEF4444).withValues(alpha: 0.75),
                                             shape: BoxShape.circle,
                                           ),
-                                          child: const Icon(Icons.arrow_upward_rounded,
-                                              size: 14, color: Colors.white),
+                                          child: const Icon(
+                                            Icons.arrow_upward_rounded,
+                                            size: 16,
+                                            color: Colors.white,
+                                          ),
                                         ),
                                         const SizedBox(width: 8),
                                         Expanded(
                                           child: Column(
                                             crossAxisAlignment: CrossAxisAlignment.start,
                                             children: [
-                                              Text(loc.tr('cash_out'),
-                                                  style: const TextStyle(
-                                                      color: Colors.white70, fontSize: 11)),
+                                              Text(
+                                                loc.tr('cash_out'),
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                              ),
                                               Text(
                                                 _showBalance
                                                     ? CurrencyFormatter.format(expense,
@@ -414,7 +365,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                                 style: const TextStyle(
                                                   color: Colors.white,
                                                   fontWeight: FontWeight.bold,
-                                                  fontSize: 13,
+                                                  fontSize: 14,
                                                 ),
                                               ),
                                             ],
@@ -435,52 +386,38 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(height: 24),
 
                   // 4. QUICK ACTIONS
-                  BlocBuilder<BookCubit, BookState>(
-                    builder: (context, state) {
-                      final isReadOnly =
-                          state is BookLoaded && state.activeBook?.isReadOnly == true;
-                      final isClosed =
-                          state is BookLoaded && state.activeBook?.isClosed == true;
-                      final isLocked = isReadOnly || isClosed;
-
-                      return Row(
-                        children: [
-                          Expanded(
-                            child: _buildQuickActionButton(
-                              title: loc.tr('add_income'),
-                              icon: Icons.add_rounded,
-                              bgColor: AppColors.incomeGreen.withValues(alpha: 0.12),
-                              iconColor: AppColors.incomeGreen,
-                              onTap: isLocked
-                                  ? () => _showLockedToast(isClosed: isClosed)
-                                  : () => context.push('/add-income'),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _buildQuickActionButton(
-                              title: loc.tr('add_expense'),
-                              icon: Icons.remove_rounded,
-                              bgColor: AppColors.expenseRed.withValues(alpha: 0.12),
-                              iconColor: AppColors.expenseRed,
-                              onTap: isLocked
-                                  ? () => _showLockedToast(isClosed: isClosed)
-                                  : () => context.push('/add-expense'),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _buildQuickActionButton(
-                              title: loc.tr('manage_books'),
-                              icon: Icons.menu_book_rounded,
-                              bgColor: AppColors.blue500.withValues(alpha: 0.12),
-                              iconColor: AppColors.blue500,
-                              onTap: () => context.push('/manage-books'),
-                            ),
-                          ),
-                        ],
-                      );
-                    },
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildQuickActionButton(
+                          title: loc.tr('add_income'),
+                          icon: Icons.add_rounded,
+                          bgColor: AppColors.incomeGreen.withValues(alpha: 0.12),
+                          iconColor: AppColors.incomeGreen,
+                          onTap: () => context.push('/add-income'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildQuickActionButton(
+                          title: loc.tr('add_expense'),
+                          icon: Icons.remove_rounded,
+                          bgColor: AppColors.expenseRed.withValues(alpha: 0.12),
+                          iconColor: AppColors.expenseRed,
+                          onTap: () => context.push('/add-expense'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildQuickActionButton(
+                          title: loc.tr('manage_books'),
+                          icon: Icons.menu_book_rounded,
+                          bgColor: AppColors.blue500.withValues(alpha: 0.12),
+                          iconColor: AppColors.blue500,
+                          onTap: () => context.push('/manage-books'),
+                        ),
+                      ),
+                    ],
                   ),
 
                   const SizedBox(height: 28),
@@ -579,17 +516,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void _showLockedToast({bool isClosed = false}) {
-    final loc = AppLocalizations.of(context);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          isClosed ? loc.tr('closed_book_banner') : loc.tr('read_only_banner'),
-        ),
-        backgroundColor: isClosed ? AppColors.expenseRed : AppColors.amber500,
-      ),
-    );
-  }
+
 
   Widget _buildQuickActionButton({
     required String title,
@@ -692,9 +619,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    tx.note.isNotEmpty
-                        ? tx.note
-                        : DateFormatter.format(tx.transactionDate, localeCode),
+                    DateFormatter.format(tx.transactionDate, localeCode),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(

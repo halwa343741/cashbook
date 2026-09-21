@@ -63,7 +63,7 @@ class LocalStorageService {
   }
 
   void _initializeDefaultData() {
-    _categories = CategoryModel.defaultCategories();
+    _categories = [];
     _books = [];
     _transactions = [];
   }
@@ -74,11 +74,20 @@ class LocalStorageService {
     }
 
     if (data['categories'] != null) {
-      _categories = (data['categories'] as List)
+      final rawList = (data['categories'] as List)
           .map((c) => CategoryModel.fromJson(c as Map<String, dynamic>))
           .toList();
+      final Map<String, CategoryModel> unique = {};
+      for (final cat in rawList) {
+        final capName = CategoryModel.capitalizeWords(cat.name);
+        final key = capName.toLowerCase();
+        if (!unique.containsKey(key)) {
+          unique[key] = cat.copyWith(name: capName);
+        }
+      }
+      _categories = unique.values.toList();
     } else {
-      _categories = CategoryModel.defaultCategories();
+      _categories = [];
     }
 
     if (data['books'] != null) {
@@ -120,6 +129,29 @@ class LocalStorageService {
     if (_activeBookId != null) {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_prefActiveBookKey, _activeBookId!);
+    }
+  }
+
+  /// Kembalikan File objek data.cashbook untuk keperluan backup.
+  Future<File> getDataFile() => _getLocalFile();
+
+  /// Restore data dari file backup eksternal (path dari file picker).
+  Future<bool> restoreFromFile(String filePath) async {
+    try {
+      final sourceFile = File(filePath);
+      if (!await sourceFile.exists()) return false;
+      final content = await sourceFile.readAsString();
+      // Validasi JSON
+      final Map<String, dynamic> data = jsonDecode(content);
+      // Tulis ke file lokal
+      final localFile = await _getLocalFile();
+      await localFile.writeAsString(jsonEncode(data));
+      // Reload data ke memori
+      _isInitialized = false;
+      await initialize();
+      return true;
+    } catch (_) {
+      return false;
     }
   }
 
@@ -193,29 +225,7 @@ class LocalStorageService {
     }
   }
 
-  Future<void> closeBook(String bookId) async {
-    final idx = _books.indexWhere((b) => b.id == bookId);
-    if (idx != -1) {
-      _books[idx] = _books[idx].copyWith(
-        isClosed: true,
-        closedAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-      );
-      await saveToFile();
-    }
-  }
 
-  Future<void> reopenBook(String bookId) async {
-    final idx = _books.indexWhere((b) => b.id == bookId);
-    if (idx != -1) {
-      _books[idx] = _books[idx].copyWith(
-        isClosed: false,
-        closedAt: null,
-        updatedAt: DateTime.now(),
-      );
-      await saveToFile();
-    }
-  }
 
   Future<void> purgeBook(String bookId) async {
     _books.removeWhere((b) => b.id == bookId);
@@ -303,6 +313,12 @@ class LocalStorageService {
     await saveToFile();
   }
 
+  Future<void> emptyTrash() async {
+    _books.removeWhere((b) => b.isDeleted);
+    _transactions.removeWhere((t) => t.isDeleted);
+    await saveToFile();
+  }
+
   // --- Summary & Calculation ---
   double getBalance(String? bookId) {
     final txs = getTransactions(bookId: bookId);
@@ -353,16 +369,38 @@ class LocalStorageService {
 
   // --- Categories ---
   List<CategoryModel> getCategories({dynamic type}) {
-    if (type == null) return List.unmodifiable(_categories);
-    final catType = type is CategoryType
-        ? type
-        : (type == 'income' ? CategoryType.income : CategoryType.expense);
-    return List.unmodifiable(_categories.where((c) => c.type == catType));
+    // Categories are global across income and expense
+    return List.unmodifiable(_categories);
+  }
+
+  Future<CategoryModel> upsertCategory(CategoryModel cat) async {
+    final formattedName = CategoryModel.capitalizeWords(cat.name);
+    final idx = _categories.indexWhere(
+      (c) => c.name.trim().toLowerCase() == formattedName.trim().toLowerCase(),
+    );
+
+    if (idx != -1) {
+      final existing = _categories[idx];
+      final updated = existing.copyWith(
+        name: formattedName,
+        icon: cat.icon.isNotEmpty ? cat.icon : existing.icon,
+        color: cat.color.isNotEmpty ? cat.color : existing.color,
+      );
+      _categories[idx] = updated;
+      await saveToFile();
+      return updated;
+    } else {
+      final newCat = cat.copyWith(
+        name: formattedName,
+      );
+      _categories.add(newCat);
+      await saveToFile();
+      return newCat;
+    }
   }
 
   Future<void> addCategory(CategoryModel cat) async {
-    _categories.add(cat);
-    await saveToFile();
+    await upsertCategory(cat);
   }
 
   Future<void> deleteCategory(String id) async {
@@ -378,58 +416,16 @@ class LocalStorageService {
     await saveToFile();
   }
 
-  // --- Export & Import (.cbshare for Read-Only sharing) ---
-  String exportBookAsJson(String bookId) {
-    final book = _books.firstWhere((b) => b.id == bookId);
-    final bookTxs = _transactions.where((t) => t.bookId == bookId && !t.isDeleted).toList();
-    final usedCatIds = bookTxs.map((t) => t.categoryId).toSet();
-    final relatedCats = _categories.where((c) => usedCatIds.contains(c.id)).toList();
-
-    final payload = {
-      'format': 'cashbook_share_v1',
-      'shareMode': 'readonly',
-      'exportedAt': DateTime.now().toIso8601String(),
-      'book': book.copyWith(isReadOnly: true).toJson(),
-      'categories': relatedCats.map((c) => c.toJson()).toList(),
-      'transactions': bookTxs.map((t) => t.toJson()).toList(),
-    };
-
-    return jsonEncode(payload);
+  String? getLastUsedCategoryId(String type) {
+    if (_settings['last_category_$type'] != null) {
+      return _settings['last_category_$type'] as String;
+    }
+    final txs = getTransactions(type: type);
+    return txs.firstOrNull?.categoryId;
   }
 
-  Future<BookModel> importSharedBook(String jsonContent, {String? senderName}) async {
-    final Map<String, dynamic> data = jsonDecode(jsonContent);
-    final bookData = Map<String, dynamic>.from(data['book'] as Map);
-    bookData['isReadOnly'] = true;
-    bookData['sharedBy'] = senderName ?? bookData['sharedBy'] ?? 'Rekan Anda';
-    bookData['id'] = 'shared_${DateTime.now().millisecondsSinceEpoch}';
-
-    final importedBook = BookModel.fromJson(bookData);
-    _books.add(importedBook);
-
-    if (data['categories'] != null) {
-      final cats = (data['categories'] as List)
-          .map((c) => CategoryModel.fromJson(c as Map<String, dynamic>));
-      for (final cat in cats) {
-        if (!_categories.any((c) => c.id == cat.id)) {
-          _categories.add(cat);
-        }
-      }
-    }
-
-    if (data['transactions'] != null) {
-      final txs = (data['transactions'] as List)
-          .map((t) => TransactionModel.fromJson(t as Map<String, dynamic>));
-      for (final tx in txs) {
-        _transactions.add(tx.copyWith(
-          bookId: importedBook.id,
-          id: 'tx_${DateTime.now().microsecondsSinceEpoch}_${tx.id}',
-        ));
-      }
-    }
-
-    _activeBookId = importedBook.id;
+  Future<void> setLastUsedCategoryId(String type, String categoryId) async {
+    _settings['last_category_$type'] = categoryId;
     await saveToFile();
-    return importedBook;
   }
 }

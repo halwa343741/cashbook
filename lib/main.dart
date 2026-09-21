@@ -8,7 +8,6 @@ import 'core/services/biometric_service.dart';
 import 'core/services/excel_export_service.dart';
 import 'core/services/google_drive_service.dart';
 import 'core/services/pdf_export_service.dart';
-import 'core/services/share_service.dart';
 import 'core/theme/app_theme.dart';
 import 'features/book/cubit/book_cubit.dart';
 import 'features/localization/cubit/locale_cubit.dart';
@@ -27,14 +26,12 @@ void main() async {
   final driveService = GoogleDriveService();
   final pdfService = PdfExportService();
   final excelService = ExcelExportService();
-  final shareService = ShareService(storage: storage);
 
   // 3. Create Router
   final router = createAppRouter(
     storage: storage,
     biometricService: biometricService,
     driveService: driveService,
-    shareService: shareService,
     pdfService: pdfService,
     excelService: excelService,
   );

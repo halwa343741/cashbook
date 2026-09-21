@@ -140,23 +140,13 @@ class BookCubit extends Cubit<BookState> {
     loadBooks();
   }
 
-  Future<void> closeBook(String bookId) async {
-    await _storage.closeBook(bookId);
-    loadBooks();
-  }
-
-  Future<void> reopenBook(String bookId) async {
-    await _storage.reopenBook(bookId);
-    loadBooks();
-  }
-
   Future<void> purgeBook(String bookId) async {
     await _storage.purgeBook(bookId);
     loadBooks();
   }
 
-  Future<void> importSharedBook(String jsonContent, {String? senderName}) async {
-    await _storage.importSharedBook(jsonContent, senderName: senderName);
+  Future<void> emptyTrash() async {
+    await _storage.emptyTrash();
     loadBooks();
   }
 }

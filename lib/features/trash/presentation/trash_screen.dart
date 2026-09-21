@@ -95,6 +95,37 @@ class _TrashScreenState extends State<TrashScreen> with SingleTickerProviderStat
     );
   }
 
+  void _emptyTrash(AppLocalizations loc) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(loc.tr('empty_trash')),
+        content: Text(loc.tr('empty_trash_confirm')),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(loc.tr('cancel'))),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              final bookCubit = context.read<BookCubit>();
+              final txCubit = context.read<TransactionCubit>();
+              final messenger = ScaffoldMessenger.of(context);
+              await bookCubit.emptyTrash();
+              await txCubit.emptyTrash();
+              if (mounted) {
+                setState(() {});
+                messenger.showSnackBar(
+                  SnackBar(content: Text(loc.tr('empty_trash_success'))),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.expenseRed),
+            child: Text(loc.tr('empty_trash'), style: const TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildDeletedBooks(bool isDark, AppLocalizations loc, String localeCode) {
     final deletedBooks = widget.storage.getDeletedBooks();
 
@@ -173,6 +204,15 @@ class _TrashScreenState extends State<TrashScreen> with SingleTickerProviderStat
                         size: 16, color: AppColors.expenseRed),
                     label: Text(loc.tr('delete_permanent'),
                         style: const TextStyle(color: AppColors.expenseRed, fontSize: 12)),
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(
+                        color: AppColors.expenseRed.withValues(alpha: 0.35),
+                        width: 1,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
                   ),
                   const SizedBox(width: 8),
                   ElevatedButton.icon(
@@ -292,6 +332,15 @@ class _TrashScreenState extends State<TrashScreen> with SingleTickerProviderStat
                         size: 16, color: AppColors.expenseRed),
                     label: Text(loc.tr('delete_permanent'),
                         style: const TextStyle(color: AppColors.expenseRed, fontSize: 12)),
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(
+                        color: AppColors.expenseRed.withValues(alpha: 0.35),
+                        width: 1,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
                   ),
                   const SizedBox(width: 8),
                   ElevatedButton.icon(
@@ -322,6 +371,25 @@ class _TrashScreenState extends State<TrashScreen> with SingleTickerProviderStat
       backgroundColor: isDark ? AppColors.darkBackground : AppColors.lightBackground,
       appBar: AppBar(
         title: Text(loc.tr('trash_menu')),
+        actions: [
+          if (widget.storage.getDeletedBooks().isNotEmpty ||
+              widget.storage.getDeletedTransactions().isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(right: 8.0),
+              child: TextButton.icon(
+                onPressed: () => _emptyTrash(loc),
+                icon: const Icon(Icons.delete_sweep_rounded, color: AppColors.expenseRed, size: 18),
+                label: Text(
+                  loc.tr('empty_trash'),
+                  style: const TextStyle(
+                    color: AppColors.expenseRed,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+            ),
+        ],
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: AppColors.primary500,

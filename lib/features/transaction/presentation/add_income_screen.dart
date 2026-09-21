@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:uuid/uuid.dart';
 import '../../../core/constants/colors.dart';
 import '../../../core/database/local_storage_service.dart';
 import '../../../core/localization/app_localizations.dart';
@@ -11,13 +10,16 @@ import '../../book/cubit/book_cubit.dart';
 import '../../category/domain/models/category_model.dart';
 import '../cubit/transaction_cubit.dart';
 import '../domain/models/transaction_model.dart';
+import 'widgets/category_suggest_field.dart';
 
 class AddIncomeScreen extends StatefulWidget {
   final LocalStorageService storage;
+  final TransactionModel? initialTransaction;
 
   const AddIncomeScreen({
     super.key,
     required this.storage,
+    this.initialTransaction,
   });
 
   @override
@@ -26,27 +28,52 @@ class AddIncomeScreen extends StatefulWidget {
 
 class _AddIncomeScreenState extends State<AddIncomeScreen> {
   final _amountController = TextEditingController();
+  final _categoryController = TextEditingController();
   final _noteController = TextEditingController();
   DateTime _selectedDate = DateTime.now();
-  CategoryModel? _selectedCategory;
   List<CategoryModel> _categories = [];
   String? _selectedBookId;
 
   final List<int> _quickAmounts = [50000, 100000, 500000, 1000000, 2500000, 5000000];
 
+  bool get _isEdit => widget.initialTransaction != null;
+
   @override
   void initState() {
     super.initState();
-    _selectedBookId = context.read<BookCubit>().activeBook?.id;
-    _categories = widget.storage.getCategories(type: 'income');
-    if (_categories.isNotEmpty) {
-      _selectedCategory = _categories.first;
+    _selectedBookId = widget.initialTransaction?.bookId ??
+        context.read<BookCubit>().activeBook?.id ??
+        widget.storage.activeBookId ??
+        widget.storage.getBooks().firstOrNull?.id;
+
+    final rawCats = List<CategoryModel>.from(
+      widget.storage.getCategories(),
+    );
+    final lastUsedId = widget.storage.getLastUsedCategoryId('income');
+    if (lastUsedId != null) {
+      final index = rawCats.indexWhere((c) => c.id == lastUsedId);
+      if (index > 0) {
+        final lastCat = rawCats.removeAt(index);
+        rawCats.insert(0, lastCat);
+      }
+    }
+    _categories = rawCats;
+
+    if (_isEdit) {
+      final tx = widget.initialTransaction!;
+      _amountController.text = CurrencyFormatter.formatNumberOnly(tx.amount, 'id');
+      _selectedDate = tx.transactionDate;
+      _noteController.text = tx.note;
+      _categoryController.text = tx.categoryName;
+    } else if (_categories.isNotEmpty) {
+      _categoryController.text = _categories.first.name;
     }
   }
 
   @override
   void dispose() {
     _amountController.dispose();
+    _categoryController.dispose();
     _noteController.dispose();
     super.dispose();
   }
@@ -68,7 +95,7 @@ class _AddIncomeScreenState extends State<AddIncomeScreen> {
     }
   }
 
-  void _saveIncome() {
+  Future<void> _saveIncome() async {
     final loc = AppLocalizations.of(context);
     final amount = CurrencyFormatter.parseRupiah(_amountController.text);
     if (amount <= 0) {
@@ -85,50 +112,105 @@ class _AddIncomeScreenState extends State<AddIncomeScreen> {
       return;
     }
 
-    final tx = TransactionModel(
-      id: const Uuid().v4(),
-      bookId: _selectedBookId!,
-      type: 'income',
-      amount: amount,
-      categoryId: _selectedCategory?.id ?? 'in_other',
-      categoryName: _selectedCategory?.name ?? 'Lainnya',
-      note: _noteController.text.trim(),
-      transactionDate: _selectedDate,
-      createdAt: DateTime.now(),
+    final catName = _categoryController.text.trim();
+    if (catName.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(loc.tr('please_select_category'))),
+      );
+      return;
+    }
+
+    final capitalizedCatName = CategoryModel.capitalizeWords(catName);
+
+    // Upsert category globally to prevent any duplication and enforce capitalization
+    final matchedCategory = await widget.storage.upsertCategory(
+      CategoryModel(
+        id: 'cat_${DateTime.now().millisecondsSinceEpoch}',
+        name: capitalizedCatName,
+        type: CategoryType.income,
+        icon: 'tag',
+        colorValue: 0xFF16A34A,
+      ),
     );
 
-    context.read<TransactionCubit>().addTransaction(tx);
-    context.pop();
-  }
+    await widget.storage.setLastUsedCategoryId('income', matchedCategory.id);
 
-  IconData _getIconData(String iconName) {
-    switch (iconName) {
-      case 'wallet':
-        return Icons.account_balance_wallet_rounded;
-      case 'briefcase':
-        return Icons.work_rounded;
-      case 'trending-up':
-        return Icons.trending_up_rounded;
-      case 'gift':
-        return Icons.card_giftcard_rounded;
-      case 'coin':
-      default:
-        return Icons.monetization_on_rounded;
+    if (_isEdit) {
+      final updatedTx = widget.initialTransaction!.copyWith(
+        amount: amount,
+        bookId: _selectedBookId,
+        categoryId: matchedCategory.id,
+        categoryName: matchedCategory.name,
+        note: _noteController.text.trim(),
+        date: _selectedDate,
+        updatedAt: DateTime.now(),
+      );
+
+      if (!mounted) return;
+      await context.read<TransactionCubit>().updateTransaction(updatedTx);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(loc.tr('transaction_saved'))),
+        );
+        context.pop(true);
+      }
+    } else {
+      final tx = TransactionModel(
+        id: 'tx_${DateTime.now().millisecondsSinceEpoch}',
+        bookId: _selectedBookId!,
+        type: 'income',
+        amount: amount,
+        categoryId: matchedCategory.id,
+        categoryName: matchedCategory.name,
+        note: _noteController.text.trim(),
+        transactionDate: _selectedDate,
+        createdAt: DateTime.now(),
+      );
+
+      if (!mounted) return;
+      await context.read<TransactionCubit>().addTransaction(tx);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(loc.tr('transaction_saved'))),
+        );
+        context.pop(true);
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final books = widget.storage.getBooks().where((b) => !b.isReadOnly).toList();
     final loc = AppLocalizations.of(context);
     final localeCode = Localizations.localeOf(context).languageCode;
 
     return Scaffold(
       backgroundColor: isDark ? AppColors.darkBackground : AppColors.lightBackground,
       appBar: AppBar(
-        title: Text(loc.tr('add_income')),
+        title: Text(_isEdit ? loc.tr('edit_transaction') : loc.tr('add_income')),
         centerTitle: true,
+        actions: [
+          // Save Transaction Button at the TOP
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+            child: ElevatedButton(
+              onPressed: _saveIncome,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.incomeGreen,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                elevation: 0,
+              ),
+              child: Text(
+                _isEdit ? loc.tr('update') : loc.tr('save'),
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+              ),
+            ),
+          ),
+        ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -136,45 +218,7 @@ class _AddIncomeScreenState extends State<AddIncomeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 1. Book Selector
-              Text(
-                loc.tr('book_name'),
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: isDark ? AppColors.gray400 : AppColors.gray600,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                decoration: BoxDecoration(
-                  color: isDark ? AppColors.darkSurface : Colors.white,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: isDark ? AppColors.gray700 : AppColors.gray200,
-                  ),
-                ),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    isExpanded: true,
-                    value: _selectedBookId,
-                    items: books.map((b) {
-                      return DropdownMenuItem(
-                        value: b.id,
-                        child: Text(b.name),
-                      );
-                    }).toList(),
-                    onChanged: (val) {
-                      if (val != null) setState(() => _selectedBookId = val);
-                    },
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              // 2. Nominal Input
+              // 1. Nominal Input
               Text(
                 loc.tr('nominal_income'),
                 style: TextStyle(
@@ -184,39 +228,38 @@ class _AddIncomeScreenState extends State<AddIncomeScreen> {
                 ),
               ),
               const SizedBox(height: 6),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                decoration: BoxDecoration(
-                  color: isDark ? AppColors.darkSurface : Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.incomeGreen, width: 1.5),
+              TextField(
+                controller: _amountController,
+                keyboardType: TextInputType.number,
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : AppColors.gray900,
                 ),
-                child: Row(
-                  children: [
-                    Text(
-                      CurrencyFormatter.getCurrencySymbol(localeCode),
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.incomeGreen,
-                      ),
+                decoration: InputDecoration(
+                  hintText: '0',
+                  filled: true,
+                  fillColor: isDark ? AppColors.darkSurface : Colors.white,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide(
+                      color: isDark ? AppColors.gray800 : AppColors.gray200,
                     ),
-                    Expanded(
-                      child: TextField(
-                        controller: _amountController,
-                        keyboardType: TextInputType.number,
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: isDark ? Colors.white : AppColors.gray900,
-                        ),
-                        decoration: const InputDecoration(
-                          hintText: '0',
-                          border: InputBorder.none,
-                        ),
-                      ),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide(
+                      color: isDark ? AppColors.gray800 : AppColors.gray200,
                     ),
-                  ],
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: const BorderSide(
+                      color: AppColors.incomeGreen,
+                      width: 1.5,
+                    ),
+                  ),
                 ),
               ),
 
@@ -231,7 +274,14 @@ class _AddIncomeScreenState extends State<AddIncomeScreen> {
                       padding: const EdgeInsets.only(right: 8.0),
                       child: ActionChip(
                         label: Text('+${CurrencyFormatter.format(amt.toDouble(), localeCode: localeCode)}'),
-                        backgroundColor: isDark ? AppColors.darkSurface : AppColors.gray100,
+                        backgroundColor: isDark ? AppColors.darkSurface : Colors.white,
+                        side: BorderSide(
+                          color: isDark ? AppColors.gray800 : AppColors.gray200,
+                          width: 1,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                         labelStyle: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
@@ -246,7 +296,7 @@ class _AddIncomeScreenState extends State<AddIncomeScreen> {
 
               const SizedBox(height: 24),
 
-              // 3. Kategori
+              // 2. Kategori (Semi-Dropdown / Combobox Suggestion Input)
               Text(
                 loc.tr('category'),
                 style: TextStyle(
@@ -255,55 +305,18 @@ class _AddIncomeScreenState extends State<AddIncomeScreen> {
                   color: isDark ? AppColors.gray400 : AppColors.gray600,
                 ),
               ),
-              const SizedBox(height: 10),
-              Wrap(
-                spacing: 10,
-                runSpacing: 10,
-                children: _categories.map((cat) {
-                  final isSelected = _selectedCategory?.id == cat.id;
-                  final catColor = Color(int.parse(cat.color.replaceFirst('#', '0xFF')));
-
-                  return InkWell(
-                    onTap: () => setState(() => _selectedCategory = cat),
-                    borderRadius: BorderRadius.circular(12),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 150),
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? AppColors.incomeGreen.withValues(alpha: 0.15)
-                            : (isDark ? AppColors.darkSurface : Colors.white),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: isSelected
-                              ? AppColors.incomeGreen
-                              : (isDark ? AppColors.gray800 : AppColors.gray200),
-                          width: isSelected ? 1.5 : 1,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(_getIconData(cat.icon), size: 18, color: catColor),
-                          const SizedBox(width: 8),
-                          Text(
-                            cat.name,
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                              color: isDark ? Colors.white : AppColors.gray800,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                }).toList(),
+              const SizedBox(height: 8),
+              CategorySuggestField(
+                controller: _categoryController,
+                categories: _categories,
+                isDark: isDark,
+                accentColor: AppColors.incomeGreen,
+                hintText: 'Pilih atau ketik kategori pemasukan...',
               ),
 
               const SizedBox(height: 24),
 
-              // 4. Tanggal
+              // 3. Tanggal
               Text(
                 loc.tr('transaction_date'),
                 style: TextStyle(
@@ -343,7 +356,7 @@ class _AddIncomeScreenState extends State<AddIncomeScreen> {
 
               const SizedBox(height: 20),
 
-              // 5. Catatan
+              // 4. Catatan
               Text(
                 loc.tr('notes_optional'),
                 style: TextStyle(
@@ -370,28 +383,6 @@ class _AddIncomeScreenState extends State<AddIncomeScreen> {
               ),
 
               const SizedBox(height: 32),
-
-              // Simpan Button
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: ElevatedButton(
-                  onPressed: _saveIncome,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.incomeGreen,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    elevation: 2,
-                  ),
-                  child: Text(
-                    loc.tr('save_transaction'),
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
             ],
           ),
         ),

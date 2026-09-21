@@ -6,7 +6,6 @@ import '../../../core/localization/app_localizations.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../book/cubit/book_cubit.dart';
-import '../../book/presentation/widgets/book_dropdown_selector.dart';
 import '../cubit/transaction_cubit.dart';
 import '../domain/models/transaction_model.dart';
 
@@ -74,61 +73,107 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
       backgroundColor: isDark ? AppColors.darkBackground : AppColors.lightBackground,
       appBar: AppBar(
         title: Text(loc.tr('history_transactions')),
-        bottom: const PreferredSize(
-          preferredSize: Size.fromHeight(40),
-          child: Padding(
-            padding: EdgeInsets.only(bottom: 8.0),
-            child: BookDropdownSelector(),
-          ),
-        ),
+        centerTitle: true,
       ),
       body: Column(
         children: [
-          // Filter Pills & Search Bar
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10),
-            child: Column(
-              children: [
-                // Search Bar
-                TextField(
-                  controller: _searchController,
-                  onChanged: (val) => setState(() => _searchQuery = val.toLowerCase()),
-                  decoration: InputDecoration(
-                    hintText: loc.tr('search_placeholder'),
-                    prefixIcon: const Icon(Icons.search_rounded),
-                    suffixIcon: _searchQuery.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.clear_rounded),
-                            onPressed: () {
-                              _searchController.clear();
-                              setState(() => _searchQuery = '');
-                            },
-                          )
-                        : null,
-                    filled: true,
-                    fillColor: isDark ? AppColors.darkSurface : Colors.white,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 0),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      borderSide: BorderSide(
-                        color: isDark ? AppColors.gray800 : AppColors.gray200,
+          // Sticky Top Section: Search Bar, Add Buttons, Filter Tabs
+          BlocBuilder<BookCubit, BookState>(
+            builder: (context, bookState) {
+              final isReadOnly = bookState is BookLoaded && bookState.activeBook?.isReadOnly == true;
+
+              return Container(
+                color: isDark ? AppColors.darkBackground : AppColors.lightBackground,
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10),
+                child: Column(
+                  children: [
+                    // Search Bar
+                    TextField(
+                      controller: _searchController,
+                      onChanged: (val) => setState(() => _searchQuery = val.toLowerCase()),
+                      decoration: InputDecoration(
+                        hintText: loc.tr('search_placeholder'),
+                        prefixIcon: const Icon(Icons.search_rounded),
+                        suffixIcon: _searchQuery.isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(Icons.clear_rounded),
+                                onPressed: () {
+                                  _searchController.clear();
+                                  setState(() => _searchQuery = '');
+                                },
+                              )
+                            : null,
+                        filled: true,
+                        fillColor: isDark ? AppColors.darkSurface : Colors.white,
+                        contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide(
+                            color: isDark ? AppColors.gray800 : AppColors.gray200,
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                // Filter Tabs
-                Row(
-                  children: [
-                    _buildFilterChip('all', loc.tr('all'), isDark),
-                    const SizedBox(width: 8),
-                    _buildFilterChip('income', loc.tr('cash_in'), isDark, AppColors.incomeGreen),
-                    const SizedBox(width: 8),
-                    _buildFilterChip('expense', loc.tr('cash_out'), isDark, AppColors.expenseRed),
+                    const SizedBox(height: 10),
+
+                    // Add Income & Add Expense Buttons Below Search
+                    if (!isReadOnly) ...[
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: () => context.push('/add-income'),
+                              icon: const Icon(Icons.arrow_downward_rounded, size: 16),
+                              label: Text(
+                                loc.tr('add_income'),
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.incomeGreen,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 11),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                elevation: 0,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: () => context.push('/add-expense'),
+                              icon: const Icon(Icons.arrow_upward_rounded, size: 16),
+                              label: Text(
+                                loc.tr('add_expense'),
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.expenseRed,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 11),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                elevation: 0,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                    ],
+
+                    // Filter Tabs
+                    Row(
+                      children: [
+                        _buildFilterChip('all', loc.tr('all'), isDark),
+                        const SizedBox(width: 8),
+                        _buildFilterChip('income', loc.tr('cash_in'), isDark, AppColors.incomeGreen),
+                        const SizedBox(width: 8),
+                        _buildFilterChip('expense', loc.tr('cash_out'), isDark, AppColors.expenseRed),
+                      ],
+                    ),
                   ],
                 ),
-              ],
-            ),
+              );
+            },
           ),
 
           // Transactions List
@@ -183,6 +228,11 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                     grouped.putIfAbsent(key, () => []).add(tx);
                   }
 
+                  // Sort transactions within each group by ID descending
+                  for (final txList in grouped.values) {
+                    txList.sort((a, b) => b.id.compareTo(a.id));
+                  }
+
                   return ListView.builder(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     itemCount: grouped.keys.length,
@@ -217,75 +267,6 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
           ),
         ],
       ),
-      floatingActionButton: BlocBuilder<BookCubit, BookState>(
-        builder: (context, state) {
-          final isReadOnly = state is BookLoaded && state.activeBook?.isReadOnly == true;
-          if (isReadOnly) return const SizedBox.shrink();
-
-          return FloatingActionButton.extended(
-            onPressed: () {
-              _showAddOptions(context, loc);
-            },
-            backgroundColor: AppColors.primary500,
-            icon: const Icon(Icons.add_rounded, color: Colors.white),
-            label: Text(loc.tr('save'), style: const TextStyle(color: Colors.white)),
-          );
-        },
-      ),
-    );
-  }
-
-  void _showAddOptions(BuildContext context, AppLocalizations loc) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ListTile(
-                  leading: Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: AppColors.incomeGreen.withValues(alpha: 0.15),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.arrow_downward_rounded, color: AppColors.incomeGreen),
-                  ),
-                  title: Text(loc.tr('add_income'),
-                      style: const TextStyle(fontWeight: FontWeight.bold)),
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    context.push('/add-income');
-                  },
-                ),
-                const Divider(),
-                ListTile(
-                  leading: Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: AppColors.expenseRed.withValues(alpha: 0.15),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.arrow_upward_rounded, color: AppColors.expenseRed),
-                  ),
-                  title: Text(loc.tr('add_expense'),
-                      style: const TextStyle(fontWeight: FontWeight.bold)),
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    context.push('/add-expense');
-                  },
-                ),
-              ],
-            ),
-          ),
-        );
-      },
     );
   }
 
@@ -299,11 +280,22 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
       onSelected: (selected) {
         if (selected) setState(() => _selectedFilter = key);
       },
-      selectedColor: color.withValues(alpha: 0.2),
+      showCheckmark: false,
+      selectedColor: color.withValues(alpha: 0.15),
+      backgroundColor: isDark ? AppColors.darkSurface : Colors.white,
+      side: BorderSide(
+        color: isSelected
+            ? color
+            : (isDark ? AppColors.gray800 : AppColors.gray200),
+        width: 1,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10),
+      ),
       labelStyle: TextStyle(
         fontSize: 12,
-        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-        color: isSelected ? color : (isDark ? AppColors.gray400 : AppColors.gray700),
+        fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+        color: isSelected ? color : (isDark ? AppColors.gray400 : AppColors.gray600),
       ),
     );
   }

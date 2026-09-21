@@ -10,65 +10,77 @@ class BiometricService {
   final LocalAuthentication _auth = LocalAuthentication();
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
 
+  static const String _appLockEnabledKey = 'app_lock_enabled';
+  static const String _biometricEnabledKey = 'biometric_lock_enabled';
   static const String _pinKey = 'user_security_pin';
   static const String _pinEnabledKey = 'pin_lock_enabled';
-  static const String _biometricEnabledKey = 'biometric_lock_enabled';
 
-  Future<bool> canCheckBiometrics() async {
+  /// Memeriksa apakah perangkat mendukung autentikasi keamanan (biometrik / PIN / pola / password Android)
+  Future<bool> canAuthenticate() async {
     try {
-      final canAuthenticateWithBiometrics = await _auth.canCheckBiometrics;
-      final canAuthenticate = canAuthenticateWithBiometrics || await _auth.isDeviceSupported();
-      return canAuthenticate;
+      final isSupported = await _auth.isDeviceSupported();
+      final canCheck = await _auth.canCheckBiometrics;
+      return isSupported || canCheck;
     } catch (_) {
       return false;
     }
   }
 
-  Future<bool> canAuthenticateWithBiometrics() => canCheckBiometrics();
+  Future<bool> canCheckBiometrics() => canAuthenticate();
+  Future<bool> canAuthenticateWithBiometrics() => canAuthenticate();
 
-  Future<bool> authenticateWithBiometrics({String reason = 'Buka kunci aplikasi Cashbook'}) async {
+  /// Menampilkan dialog autentikasi native Android (Fingerprint / Face / PIN / Pola perangkat)
+  Future<bool> authenticate({
+    String reason = 'Gunakan sidik jari atau PIN Android untuk membuka Cashbook',
+  }) async {
     try {
-      final isAvailable = await canCheckBiometrics();
-      if (!isAvailable) return false;
+      final available = await canAuthenticate();
+      if (!available) return false;
 
       return await _auth.authenticate(
         localizedReason: reason,
+        biometricOnly: false, // Mengizinkan PIN / Pola / Password bawaan Android
+        persistAcrossBackgrounding: true,
       );
     } catch (_) {
       return false;
     }
   }
 
-  Future<bool> authenticate({String reason = 'Buka kunci aplikasi Cashbook'}) =>
-      authenticateWithBiometrics(reason: reason);
+  Future<bool> authenticateWithBiometrics({
+    String reason = 'Gunakan sidik jari atau PIN Android untuk membuka Cashbook',
+  }) => authenticate(reason: reason);
 
-  Future<bool> isPinSet() async {
-    final pin = await _storage.read(key: _pinKey);
-    final enabled = await _storage.read(key: _pinEnabledKey);
-    return pin != null && pin.isNotEmpty && enabled != 'false';
+  /// Status apakah penguncian aplikasi aktif
+  Future<bool> isLockEnabled() async {
+    final lockVal = await _storage.read(key: _appLockEnabledKey);
+    if (lockVal != null) return lockVal == 'true';
+
+    // Migrasi jika sebelumnya mengaktifkan biometrik atau PIN versi lama
+    final bioVal = await _storage.read(key: _biometricEnabledKey);
+    final pinVal = await _storage.read(key: _pinEnabledKey);
+    return bioVal == 'true' || pinVal == 'true';
   }
 
-  Future<bool> verifyPin(String enteredPin) async {
-    final storedPin = await _storage.read(key: _pinKey);
-    return storedPin != null && storedPin == enteredPin;
-  }
-
-  Future<void> setPin(String pin) async {
-    await _storage.write(key: _pinKey, value: pin);
-    await _storage.write(key: _pinEnabledKey, value: 'true');
-  }
-
-  Future<void> removePin() async {
+  /// Aktifkan / nonaktifkan kunci aplikasi
+  Future<void> setLockEnabled(bool enabled) async {
+    await _storage.write(key: _appLockEnabledKey, value: enabled.toString());
+    await _storage.write(key: _biometricEnabledKey, value: enabled.toString());
+    // Bersihkan custom PIN lama agar tidak ada residu
     await _storage.delete(key: _pinKey);
     await _storage.write(key: _pinEnabledKey, value: 'false');
   }
 
-  Future<bool> isBiometricEnabled() async {
-    final val = await _storage.read(key: _biometricEnabledKey);
-    return val == 'true';
-  }
+  // Kompatibilitas
+  Future<bool> isBiometricEnabled() => isLockEnabled();
+  Future<void> setBiometricEnabled(bool enabled) => setLockEnabled(enabled);
 
-  Future<void> setBiometricEnabled(bool enabled) async {
-    await _storage.write(key: _biometricEnabledKey, value: enabled.toString());
+  // Custom PIN ditiadakan - gunakan PIN bawaan Android
+  Future<bool> isPinSet() async => false;
+  Future<bool> verifyPin(String enteredPin) async => false;
+  Future<void> setPin(String pin) async {}
+  Future<void> removePin() async {
+    await _storage.delete(key: _pinKey);
+    await _storage.write(key: _pinEnabledKey, value: 'false');
   }
 }

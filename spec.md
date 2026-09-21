@@ -10,9 +10,8 @@ Dokumen spesifikasi teknis dan panduan implementasi aplikasi mobile **Cashbook**
 |---|---|
 | **Nama Aplikasi** | **Cashbook** (Aplikasi Catatan Keuangan & Kasir Digital Pribadi) |
 | **Sistem Pengelompokan** | **Multi-Folder / Multi-Buku Kas (Parent-Child)**: Transaksi in/out dikelompokkan per Buku/Folder (misal: *Kas Pribadi*, *Kas Usaha*, *Kas Tabungan*) |
-| **Siklus Hidup Buku Kas** | **Buka (Open), Tutup (Closed), dan Buka Kembali (Reopen)**: Buku yang ditutup mengunci mutasi (final snapshot) dan dapat dibuka kembali kapan saja oleh pemilik |
-| **Aturan Berbagi Berkas** | **Share File (.cbshare) HANYA untuk Buku yang Ditutup (Closed Books)**: Sebagai laporan rekapan final yang tidak berubah |
-| **Aturan Berbagi Tautan** | **Share Link Live untuk Buku Buka maupun Tutup (Open & Closed Books)**: Penerima dapat memantau saldo & mutasi secara live via koneksi Google Drive |
+| **Sistem Buku Kas** | **Multi-Buku Kas Selalu Aktif**: Seluruh buku kas selalu aktif untuk pencatatan transaksi tanpa sistem tutup/kunci atau share artifisial |
+| **Pusat Pemilihan Buku Kas** | **Hanya di Beranda (Home)**: Pemilihan buku kas aktif dipusatkan di layar Beranda. Saat mencatat transaksi (Pemasukan/Pengeluaran), riwayat transaksi, dan laporan, aplikasi langsung menggunakan buku aktif tanpa perlu memilih buku lagi |
 | **Multi-Bahasa (Localization)** | **Bahasa Indonesia (`id`), English (`en`), Español (`es`)**: Format angka ribuan, mata uang, dan tanggal/jam dinamis mengikuti locale bahasa yang dipilih |
 | **Keamanan Data** | **Kunci Aplikasi dengan PIN & Biometrik** (Fingerprint / Face ID via `local_auth`) |
 | **Sistem Penghapusan** | **Soft-Delete & Tong Sampah (Trash)**: Mencegah kehilangan data buku kas & transaksi dengan fitur Restore |
@@ -21,7 +20,7 @@ Dokumen spesifikasi teknis dan panduan implementasi aplikasi mobile **Cashbook**
 | **Framework** | Flutter 3.x (Dart 3.x) |
 | **Platform Target** | Android (API 24+) & iOS (iOS 13+) |
 | **Tampilan Desain Acuan** | Mobile Portrait 390 x 844 dp |
-| **Metode Autentikasi** | **Hanya Google Sign-In** (OAuth 2.0 via `google_sign_in`) |
+| **Metode Autentikasi** | **Biometrik (Fingerprint / Face ID) + PIN** via `local_auth` (100% Offline, tanpa akun Google) |
 | **Database & Cloud Sync** | **100% Offline-First dengan Sinkronisasi Google Drive** (file `data.cashbook`) |
 | **Dukungan Tema** | **Mode Terang (Light) & Mode Gelap (Dark)** + Ikuti Sistem |
 | **Prinsip Arsitektur** | Clean Architecture (Feature-First) |
@@ -172,72 +171,18 @@ Pengguna dapat menyinkronkan data melalui 2 cara:
 * 🟡 **Offline (Belum Sync)**: Terdapat data transaksi offline yang belum diunggah ke Google Drive (contoh teks: *"3 transaksi belum disinkron"*).
 * 🔄 **Sedang Sinkronisasi**: Indikator loading halus saat proses upload/download berlangsung.
 
-### 3.5. Mekanisme Berbagi Buku Kas (100% Bebas Biaya & Eksklusif Aplikasi)
+### 3.5. Alur Pemilihan Buku Kas & Pencatatan Transaksi Terpusat
 
-Aplikasi dirancang **100% Bebas Biaya (Zero Cost & Serverless)**:
-* **Tidak membutuhkan sewa domain, VPS, atau hosting web**.
-* Mekanisme berbagi sepenuhnya mengandalkan **Format File Terenkripsi Eksklusif (`.cbshare`)** dan **Google Drive milik pengguna**.
-
-#### 1. Format File Eksklusif (`.cbshare`)
-* **Hanya Bisa Dibuka oleh Aplikasi Cashbook**:
-  * File menggunakan ekstensi kustom **`.cbshare`** (contoh: `Kas_Toko.cbshare`).
-  * Di Android & iOS didaftarkan **App File Association (Intent Filter / Document Types)**:
-    * Begitu penerima mengetuk file `.cbshare` di WhatsApp, Telegram, File Manager, atau email, sistem operasi HP **langsung otomatis meluncurkan aplikasi Cashbook**.
-  * **Enkripsi & Proteksi Data**:
-    * Isi file `.cbshare` dienkripsi (AES/HMAC) sehingga jika file dibuka di aplikasi lain (seperti Notepad), isinya tidak bisa dibaca atau dimanipulasi.
-    * File hanya bisa didekripsi dan diverifikasi oleh aplikasi Cashbook.
-
-#### 2. Cara Pengguna Membagikan Buku (Sender)
-Pengguna memilih menu *"Bagikan Buku Kas"* di Screen 10:
-* **Metode A: Kirim File `.cbshare` Langsung (Via WhatsApp / Sosmed)**:
-  * Aplikasi mengekstrak snapshot data buku kas, daftar kategori terkait, dan seluruh transaksinya.
-  * File `[Nama_Buku].cbshare` langsung dibagikan ke kontak WhatsApp/sosmed menggunakan plugin `share_plus`.
-* **Metode B: Link Google Drive Langsung**:
-  * Snapshot file diunggah ke folder Google Drive pemilik dengan izin *View Only*.
-  * Aplikasi membagikan link resmi Google Drive (`https://drive.google.com/file/d/XXXX/view?usp=sharing`).
-  * Di aplikasi penerima, link tersebut dapat dibuka / di-paste melalui menu *"Impor dari Link Drive"*.
-
-#### 3. Perilaku di Sisi Penerima (Receiver - Read-Only Mode)
-* **Dialog Konfirmasi Impor**:
-  * Saat file `.cbshare` atau link dibuka di aplikasi, muncul pop-up pratinjau:
-    * *"Buku Kas: [Nama Buku]"*
-    * *"Pengirim: [Nama Pemilik / Email]"*
-    * *"Total Transaksi: XX | Saldo Berjalan: Rp X.XXX.XXX"*
-    * *"Hak Akses: 👁️ Hanya-Baca (Read-Only)"*
-  * Penerima menekan tombol **"Tambahkan ke Buku Saya"**.
-* **Proteksi Read-Only yang Ketat**:
-  * Buku kas tersebut masuk ke dropdown switcher buku dengan badge visual **`[ 👁️ Read-Only ]`**.
-  * **Penerima DAPAT**:
-    * Melihat saldo saat ini secara real-time.
-    * Melihat seluruh riwayat transaksi (Cash In & Cash Out).
-    * Melihat grafik perbandingan dan laporan bulanan/kustom.
-    * Mengekspor laporan ke format PDF / Excel.
-  * **Penerima TIDAK BISA**:
-    * Menambah transaksi baru (tombol Tambah disembunyikan/dinonaktifkan).
-    * Mengedit nominal, tanggal, atau catatan transaksi.
-    * Menghapus catatan transaksi milik pemilik asli.
-* **Opsi Bagi Penerima**:
-  * **"Keluarkan dari Buku Saya"**: Menghapus buku terbagikan tersebut dari perangkat penerima tanpa mempengaruhi data pemilik asli.
-  * **"Salin sebagai Buku Saya (Bisa Diedit)"**: Menduplikasi seluruh mutasi menjadi buku kas pribadi independen yang terpisah.
-
-### 3.6. Siklus Hidup Buku Kas (Open, Closed, Reopened) & Aturan Berbagi
-1. **Status Buku Kas**:
-   * **Buku Terbuka (`isClosed = false`)**: Buku kas dalam mode aktif pencatatan operasional harian. Transaksi pemasukan, pengeluaran, dan edit data dapat dilakukan bebas.
-   * **Buku Ditutup (`isClosed = true`, `closedAt`)**: Buku kas difinalisasi/dikunci (misal tutup buku bulanan/tahunan).
-     * Seluruh transaksi terkunci secara permanen selama status closed.
-     * Tombol tambah pemasukan/pengeluaran dinonaktifkan dengan banner notifikasi informatif.
-     * Saldo akhir menjadi saldo tetap yang terdokumentasi rapi.
-   * **Buka Kembali (Reopen)**: Pemilik buku kas memiliki otoritas penuh untuk membuka kembali buku kas yang telah ditutup kapan saja untuk melanjutkan pencatatan jika terdapat revisi.
-2. **Aturan Validasi Berbagi Berkas vs Tautan**:
-   * **Ekspor & Berbagi File `.cbshare`**:
-     * **HANYA BERLAKU UNTUK CLOSED BOOKS**.
-     * Jika pengguna mencoba membagikan buku yang masih Open via file, aplikasi menampilkan dialog edukatif: *"Buku kas harus ditutup terlebih dahulu sebelum dibagikan sebagai berkas laporan rekapan."*
-     * Hal ini menjamin bahwa berkas fisik `.cbshare` yang beredar di WA/sosmed merupakan rekapan final yang valid.
-   * **Berbagi Tautan Langsung (Live Google Drive Link)**:
-     * **BERLAKU UNTUK OPEN DAN CLOSED BOOKS**.
-     * Link berbagi menggunakan format deep link `cashbook://share?driveId=...` yang mengarah ke file sinkronisasi Google Drive pemilik.
-     * Penerima dapat memantau pergerakan saldo dan mutasi secara **Live** (Read-Only) setiap kali pemilik melakukan sinkronisasi data ke Google Drive.
-     * Tetap 100% Bebas Biaya Server & Domain (memanfaatkan Google Drive API & protocol URI scheme).
+1. **Pemilihan Buku Kas HANYA di Beranda (Home Screen)**:
+   * Dropdown switcher buku kas ditempatkan secara terpusat dan eksklusif di layar Beranda.
+   * Pengguna mengganti dan memilih buku kas aktif langsung di Beranda, dan preferensi ini otomatis tersimpan secara permanen (`activeBookId`).
+2. **Pencatatan Transaksi Langsung Tanpa Pilih Buku**:
+   * Saat pengguna menekan tombol **Tambah Pemasukan** (`/add-income`) atau **Tambah Pengeluaran** (`/add-expense`), form input transaksi otomatis langsung terhubung ke buku kas yang sedang aktif.
+   * **Tidak ada form/dropdown pemilihan buku kas** saat mencatat transaksi, sehingga pengalaman mencatat pengeluaran dan pemasukan menjadi sangat cepat, simpel, dan bebas hambatan.
+3. **Layar Riwayat & Laporan**:
+   * Layar Riwayat Transaksi dan Laporan Keuangan menampilkan mutasi dari buku kas yang sedang aktif terpilih di Beranda.
+4. **Buku Kas Selalu Aktif**:
+   * Tidak ada sistem penutupan buku (close/reopen) maupun mode read-only. Seluruh buku kas yang dibuat selalu aktif dan dapat dicatat serta diedit sewaktu-waktu oleh pengguna.
 
 ### 3.7. Sistem Multi-Bahasa & Format Dinamis (Localization)
 1. **Pilihan Bahasa Tersedia**:
@@ -282,9 +227,9 @@ lib/
 │   │   ├── colors.dart
 │   │   └── strings.dart
 │   ├── services/
-│   │   ├── google_auth_service.dart // Google Sign-In
-│   │   ├── google_drive_service.dart// CRUD data.cashbook di Drive
-│   │   ├── biometric_service.dart   // local_auth PIN & Biometric
+│   │   ├── biometric_service.dart   // local_auth PIN & Biometric (autentikasi utama)
+│   │   ├── drive_backup_service.dart// Backup/Restore data.cashbook via Android file picker
+│   │   ├── google_drive_service.dart// Opsional: CRUD data.cashbook di Drive (tanpa OAuth)
 │   │   ├── pdf_export_service.dart  // Export rekap PDF
 │   │   └── excel_export_service.dart// Export rekap Excel (.xlsx / .csv)
 │   ├── database/
@@ -294,10 +239,10 @@ lib/
 │       ├── currency_formatter.dart  // Rupiah format
 │       └── date_formatter.dart      // dd MMM yyyy format
 └── features/
-    ├── auth/                        // Screen 1 & 2 (Google Auth only)
+    ├── auth/                        // Screen 1 & 2 (Offline-First, tanpa Google Auth)
     │   ├── presentation/
     │   │   ├── splash_screen.dart
-    │   │   └── login_screen.dart    // Hanya tombol Google
+    │   │   └── login_screen.dart    // Welcome screen (first-time setup, tanpa Google button)
     │   └── cubit/
     │       └── auth_cubit.dart
     ├── security/                    // Screen 1.5: PIN / Biometric Lock
@@ -339,19 +284,18 @@ lib/
 ## 5. Spesifikasi & Interaksi 10 Layar
 
 ### Screen 1: Splash Screen (`01-splash-screen`)
-* **Route**: `/splash`
+* **Route**: `/splash` (alias `/`)
 * **Elemen UI**:
   * Background Gradient Hijau (`#15803D` ke `#0F5B2C`).
   * Logo Dompet Putih + Typography "Cashbook" + Subtitle.
   * Loading Indicator Bar.
-* **Logika**:
-  * Cek apakah user sudah terautentikasi Google (`googleSignIn.isSignedIn()`).
-  * Jika **Sudah Login**:
-    * Cek apakah **Kunci Aplikasi (PIN / Biometrik)** diaktifkan di pengaturan:
-      * Jika **Aktif**: Redirect ke **Screen 1b (`/lock-screen`)**.
-      * Jika **Nonaktif**:
-        * Verifikasi data buku kas: jika `books.isNotEmpty` ➔ `/home`, jika `books.isEmpty` ➔ `/create-initial-book`.
-  * Jika **Belum Login**: Redirect ke `/login`.
+* **Logika** (100% Offline-First, tanpa cek Google Sign-In):
+  1. **Cek Kunci Aplikasi (PIN / Biometrik)**:
+     * Jika **PIN atau Biometrik aktif** → Redirect ke **Screen 1b (`/lock`)** untuk verifikasi identitas.
+     * Jika **tidak ada kunci aktif** → Lanjut ke langkah 2.
+  2. **Cek Data Buku Kas Lokal**:
+     * Jika `books.isNotEmpty` → Redirect ke `/home` (Dashboard).
+     * Jika `books.isEmpty` (first-time) → Redirect ke `/login` (Welcome Screen).
 
 ---
 
@@ -372,20 +316,21 @@ lib/
 
 ---
 
-### Screen 2: Login Screen (`02-login-welcome`)
+### Screen 2: Welcome Screen / First-Time Setup (`02-login-welcome`)
 * **Route**: `/login`
+* **Kapan Ditampilkan**: **Hanya pada first-time setup** (saat `books.isEmpty` dan tidak ada PIN/Biometrik aktif).
 * **Elemen UI**:
   * Logo dompet hijau dengan judul "Cashbook" & slogan *"Kelola keuangan, capai tujuanmu"*.
-  * **Hanya Tombol Google Sign-In**:
-    * Tombol elegan berlatar putih dengan border (atau surface dark pada dark mode).
-    * Logo resmi 4-warna Google + teks: **"Lanjut dengan Google"** / **"Masuk dengan Google"**.
-  * Ilustrasi tanaman & dompet di bagian bawah.
+  * Ilustrasi / animasi dompet & grafik keuangan.
+  * **Tombol Utama**: **"Mulai Menggunakan Cashbook"** (Solid Hijau Emerald).
+    * Langsung mengarah ke Screen 2b (`/create-initial-book`) tanpa login apapun.
+  * **Tombol Sekunder**: **"Pulihkan dari Backup"** (Outlined, icon restore).
+    * Memunculkan Android native file picker (SAF - Storage Access Framework) untuk memilih file backup `.cashbook` atau file backup lainnya.
+    * Tidak membutuhkan akun Google atau OAuth — pengguna cukup pilih file dari lokasi mana saja (Drive, WhatsApp, dll).
+  * Badge kecil di bawah: 🔒 *"100% Lokal & Aman di Perangkat Anda"*
 * **Logika**:
-  * Klik tombol ➔ Panggil `GoogleAuthService.signIn()`.
-  * Meminta izin akun Google + scope Google Drive (`drive.file` atau `drive.appdata`).
-  * Setelah berhasil login ➔ Inisialisasi pengecekan file `data.cashbook` di Google Drive:
-    * **Jika file di Drive sudah ada & memiliki buku (`books.isNotEmpty`)**: Unduh data, set `activeBookId` terakhir, dan arahkan ke `/home`.
-    * **Jika pengguna baru / belum memiliki buku kas (`books.isEmpty`)**: Arahkan ke **Screen 2b (`/create-initial-book`)** untuk memandu pembuatan buku kas perdana.
+  * Klik **"Mulai"** → Arahkan ke `/create-initial-book`.
+  * Klik **"Pulihkan dari Backup"** → Buka `FilePicker` / Android SAF → Baca file backup → Restore data lokal → Arahkan ke `/home`.
 
 ---
 
@@ -445,40 +390,40 @@ lib/
 ---
 
 ### Screen 4: Tambah Pemasukan (`04-tambah-pemasukan`)
-* **Route**: `/transaction/add-income`
+* **Route**: `/add-income`
 * **Elemen UI**:
-  * **Field Buku Kas / Folder**: Dropdown pemilihan buku kas tujuan (default otomatis terisi buku kas yang sedang aktif).
   * Input Nominal (format otomatis ribuan Rupiah, misal `Rp 1.000.000`).
+  * Quick Amount Pills (+10.000, +50.000, +100.000, dll).
   * Pemilihan Kategori Pemasukan (Gaji, Penjualan, Investasi, dll).
   * Pemilihan Tanggal (Date picker, default hari ini).
   * Catatan Transaksi (opsional).
-  * Tombol **Simpan** (Hijau `#15803D`).
+  * Tombol **Simpan**.
 * **Logika**:
-  * Menyimpan transaksi dengan `bookId` dari buku kas aktif/terpilih.
-  * Update saldo lokal `data.cashbook` dan jadwalkan sinkronisasi ke Google Drive.
+  * Otomatis menyimpan transaksi ke **buku kas yang sedang aktif** (`activeBookId`) tanpa perlu memilih buku lagi.
+  * Simpan ke penyimpanan lokal `data.cashbook`.
 
 ---
 
 ### Screen 5: Tambah Pengeluaran (`05-tambah-pengeluaran`)
-* **Route**: `/transaction/add-expense`
+* **Route**: `/add-expense`
 * **Elemen UI**:
-  * **Field Buku Kas / Folder**: Dropdown pemilihan buku kas sumber dana (default otomatis buku aktif).
-  * Input Nominal (`Rp 250.000`), Kategori Pengeluaran (Makan & Minum, dll), Tanggal, Catatan.
-  * Tombol **Simpan** (Merah `#EF4444`).
+  * Input Nominal (`Rp 250.000`).
+  * Quick Amount Pills (+10.000, +50.000, +100.000, dll).
+  * Pemilihan Kategori Pengeluaran (Makan & Minum, dll).
+  * Pemilihan Tanggal & Catatan.
+  * Tombol **Simpan**.
 * **Logika**:
-  * Mengurangi saldo buku kas terkait (`bookId`).
-  * Simpan ke `data.cashbook` lokal dan jadwalkan sync ke Google Drive.
+  * Otomatis mengurangi saldo dari **buku kas yang sedang aktif** (`activeBookId`) tanpa perlu memilih buku lagi.
+  * Simpan ke penyimpanan lokal `data.cashbook`.
 
 ---
 
 ### Screen 6: Daftar Transaksi (`06-daftar-transaksi`)
 * **Route**: `/transactions`
 * **Elemen UI**:
-  * **Header dengan Info Buku Aktif**: Menampilkan nama buku kas aktif yang sedang dilihat (dengan tombol ganti buku cepat).
-  * Search Icon + Filter Icon.
-  * Filter Pills: `Semua` | `Pemasukan (Cash In)` | `Pengeluaran (Cash Out)`.
+  * Search Bar & Filter Pills: `Semua` | `Pemasukan (Cash In)` | `Pengeluaran (Cash Out)`.
   * Grouping berdasarkan Tanggal (contoh: "12 Okt 2025").
-  * **Data Transaksi**: Hanya menampilkan transaksi cash in & out milik **Buku Kas yang sedang aktif**.
+  * **Data Transaksi**: Menampilkan riwayat transaksi milik **Buku Kas yang sedang aktif** (dipilih dari Beranda).
 * **Interaksi**: Klik item membuka Screen 7 (Detail Transaksi).
 
 ---
@@ -530,28 +475,30 @@ lib/
 ### Screen 10: Pengaturan Akun (`10-pengaturan-akun`)
 * **Route**: `/account`
 * **Elemen UI**:
-  * Profil Pengguna Google: Foto avatar Google, Nama lengkap, Email Google.
+  * **Header Lokal** (tanpa avatar Google): Icon perangkat + teks *"Mode Lokal — Data Tersimpan di Perangkat"*.
   * Menu List Lengkap:
-    1. **Profil**: Tampilkan info akun Google.
-    2. **Kelola Buku Kas / Folder**:
+    1. **Kelola Buku Kas / Folder**:
        * Menampilkan jumlah buku kas (contoh: *"2 Buku Kas Aktif"*).
        * Tap membuka halaman manajemen Buku: tambah buku baru, edit nama, pilih warna & icon tema, atau pindahkan ke Tong Sampah.
-    3. **Keamanan & Kunci Aplikasi**:
+    2. **Keamanan & Kunci Aplikasi**:
        * Status badge: *Aktif (PIN & Biometrik)* / *Nonaktif*.
        * Tap membuka sheet konfigurasi:
          * Toggle Kunci PIN (input & konfirmasi 4/6 digit PIN).
          * Toggle Kunci Biometrik (Sidik Jari / Face ID).
          * Menu "Ubah PIN".
+    3. **Backup & Pemulihan Data** (via Android Native — 100% Gratis):
+       * **"Backup ke Google Drive"** / **"Simpan Backup ke..."**:
+         * Menggunakan Android SAF (`share_plus` atau `file_picker`) untuk menyimpan file `data.cashbook` ke lokasi pilihan pengguna (Drive, SD Card, dll).
+         * Tidak memerlukan login Google / OAuth.
+       * **"Pulihkan dari Backup"**:
+         * Membuka file picker → pengguna pilih file backup `data.cashbook` → data di-restore ke perangkat.
+       * Menampilkan info: *"Backup Terakhir: 12 Okt 2025, 09:10"*.
     4. **Tong Sampah / Trash**:
        * Menampilkan badge jumlah item terhapus (misal: *"1 Buku Kas di Sampah"*).
        * Tap membuka **Screen 10b (`/trash`)**.
-    5. **Sinkronisasi Google Drive**:
-       * Menampilkan status & timestamp: *"Terakhir: 12 Okt 2025, 09:10"*.
-       * Sheet aksi: **"Sinkronkan Sekarang"** & **"Unduh Ulang dari Google"**.
-    6. **Tema**: Toggle Mode Terang, Gelap, atau Ikuti Sistem.
-    7. **Notifikasi**: Atur jadwal pengingat catat kasir harian.
-    8. **Tentang Cashbook**: Versi aplikasi dan lisensi.
-  * Tombol **Keluar / Sign Out** (Merah `#EF4444`): Logout dari Google.
+    5. **Tema**: Toggle Mode Terang, Gelap, atau Ikuti Sistem.
+    6. **Notifikasi**: Atur jadwal pengingat catat kasir harian.
+    7. **Tentang Cashbook**: Versi aplikasi dan lisensi.
 
 ---
 
@@ -607,9 +554,7 @@ lib/
       "createdAt": "2025-10-01T00:00:00Z",
       "updatedAt": "2025-10-12T09:10:00Z",
       "isDeleted": false,
-      "deletedAt": null,
-      "isReadOnly": false,
-      "sharedBy": null
+      "deletedAt": null
     },
     {
       "id": "book_2",
@@ -621,9 +566,7 @@ lib/
       "createdAt": "2025-10-01T00:00:00Z",
       "updatedAt": "2025-10-12T09:10:00Z",
       "isDeleted": false,
-      "deletedAt": null,
-      "isReadOnly": false,
-      "sharedBy": null
+      "deletedAt": null
     }
   ],
   "categories": [
@@ -662,8 +605,6 @@ class BookModel {
   final int colorValue;     // Hex ARGB
   final String? description;
   final double initialBalance;
-  final bool isReadOnly;    // True jika buku ini dibagikan oleh orang lain (Read-Only)
-  final String? sharedBy;   // Nama / Email pemilik asli buku jika isReadOnly == true
   final DateTime createdAt;
   final DateTime updatedAt;
   final bool isDeleted;
@@ -676,8 +617,6 @@ class BookModel {
     required this.colorValue,
     this.description,
     this.initialBalance = 0.0,
-    this.isReadOnly = false,
-    this.sharedBy,
     required this.createdAt,
     required this.updatedAt,
     this.isDeleted = false,
@@ -780,13 +719,14 @@ dev_dependencies:
 
 ## 8. Roadmap Implementasi
 
-1. **Fase 1: Setup Theme (Light & Dark) & Google Auth**
+1. **Fase 1: Setup Theme (Light & Dark) & Offline-First Auth**
    * Konfigurasi `AppTheme` (Light/Dark tokens) & `ThemeCubit`.
-   * Setup Firebase / Google Cloud Console Client ID untuk `google_sign_in`.
-   * Implementasi Screen 1 (Splash) & Screen 2 (Google Login).
-2. **Fase 2: Layanan Google Drive (`data.cashbook`)**
-   * Buat `GoogleDriveService`: pengecekan file, download, dan upload `data.cashbook`.
-   * Buat `LocalStorageService` untuk menyimpan cache lokal file `data.cashbook`.
+   * Implementasi Screen 1 (Splash — cek PIN/biometrik lokal).
+   * Implementasi Screen 2 (Welcome Screen — first-time setup, tanpa Google).
+   * Setup `BiometricService` (PIN + Fingerprint/Face ID via `local_auth`).
+2. **Fase 2: Local Storage (`data.cashbook`)**
+   * Buat `LocalStorageService` untuk menyimpan & membaca file `data.cashbook` lokal.
+   * Tidak ada cloud sync wajib — data tersimpan 100% di perangkat.
 3. **Fase 3: Layar Dashboard & Input Transaksi**
    * Screen 3 (Dashboard & Saldo Card auto-calculate).
    * Screen 4 (Tambah Pemasukan) & Screen 5 (Tambah Pengeluaran).
@@ -794,5 +734,8 @@ dev_dependencies:
    * Screen 6 (Daftar Transaksi grouped by date) & Screen 7 (Detail Transaksi).
    * Screen 8 (Laporan Bar Chart `fl_chart`).
    * Screen 9 (Kategori Pemasukan & Pengeluaran).
-5. **Fase 5: Akun & Sinkronisasi Drive**
-   * Screen 10 (Pengaturan Akun, Switcher Tema Light/Dark, Manual Sync ke Google Drive, Logout Google).
+5. **Fase 5: Akun, Backup & Keamanan**
+   * Screen 10 (Pengaturan Akun, Switcher Tema Light/Dark, Keamanan PIN/Biometrik).
+   * Fitur **Backup & Restore** via Android SAF (file picker native — tanpa OAuth):
+     * Backup: Simpan `data.cashbook` ke Drive/SD via `share_plus`.
+     * Restore: Buka file backup via `file_picker`, restore data lokal.

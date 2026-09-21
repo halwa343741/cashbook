@@ -20,6 +20,7 @@ class AppTheme {
         onSurface: AppColors.lightTextPrimary,
         error: AppColors.expense,
       ),
+      dividerColor: AppColors.lightDivider,
       cardTheme: CardThemeData(
         color: AppColors.lightSurface,
         elevation: 0,
@@ -27,6 +28,24 @@ class AppTheme {
           borderRadius: BorderRadius.circular(16),
           side: const BorderSide(color: AppColors.lightCardBorder, width: 1),
         ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: AppColors.lightTextPrimary,
+          side: const BorderSide(color: AppColors.gray300, width: 1),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      ),
+      chipTheme: ChipThemeData(
+        backgroundColor: Colors.white,
+        selectedColor: AppColors.primary500.withValues(alpha: 0.15),
+        side: const BorderSide(color: AppColors.gray200, width: 1),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+        labelStyle: const TextStyle(fontSize: 12),
       ),
       appBarTheme: AppBarTheme(
         backgroundColor: AppColors.lightSurface,
@@ -106,6 +125,7 @@ class AppTheme {
         onSurface: AppColors.darkTextPrimary,
         error: AppColors.expense,
       ),
+      dividerColor: AppColors.darkDivider,
       cardTheme: CardThemeData(
         color: AppColors.darkSurface,
         elevation: 0,
@@ -113,6 +133,24 @@ class AppTheme {
           borderRadius: BorderRadius.circular(16),
           side: const BorderSide(color: AppColors.darkCardBorder, width: 1),
         ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: AppColors.darkTextPrimary,
+          side: const BorderSide(color: AppColors.gray700, width: 1),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      ),
+      chipTheme: ChipThemeData(
+        backgroundColor: AppColors.darkSurface,
+        selectedColor: AppColors.primary500.withValues(alpha: 0.2),
+        side: const BorderSide(color: AppColors.gray800, width: 1),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+        labelStyle: const TextStyle(fontSize: 12),
       ),
       appBarTheme: AppBarTheme(
         backgroundColor: AppColors.darkSurface,
