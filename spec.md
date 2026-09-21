@@ -1,543 +1,367 @@
-# Spesifikasi Teknis Aplikasi Cashbook (Flutter Mobile)
+# Spesifikasi Teknis & Business Logic Aplikasi Cashbook (Flutter Mobile)
 
-Dokumen spesifikasi teknis dan panduan implementasi aplikasi mobile **Cashbook** berbasis **Flutter** berdasarkan desain Figma [CashbookByGemini](https://www.figma.com/design/N9vywpatfKo4fDlDjrGzJW/CashbookByGemini?node-id=0-1).
+Dokumen spesifikasi teknis, arsitektur, dan panduan implementasi komprehensif aplikasi mobile **Cashbook** berbasis **Flutter** sesuai dengan business logic dan kode implementasi produksi saat ini.
 
 ---
 
-## 1. Ringkasan Proyek
+## 1. Ringkasan Proyek & Arsitektur
 
 | Parameter | Spesifikasi |
 |---|---|
 | **Nama Aplikasi** | **Cashbook** (Aplikasi Catatan Keuangan & Kasir Digital Pribadi) |
-| **Sistem Pengelompokan** | **Multi-Folder / Multi-Buku Kas (Parent-Child)**: Transaksi in/out dikelompokkan per Buku/Folder (misal: *Kas Pribadi*, *Kas Usaha*, *Kas Tabungan*) |
-| **Sistem Buku Kas** | **Multi-Buku Kas Selalu Aktif**: Seluruh buku kas selalu aktif untuk pencatatan transaksi tanpa sistem tutup/kunci atau share artifisial |
-| **Pusat Pemilihan Buku Kas** | **Hanya di Beranda (Home)**: Pemilihan buku kas aktif dipusatkan di layar Beranda. Saat mencatat transaksi (Pemasukan/Pengeluaran), riwayat transaksi, dan laporan, aplikasi langsung menggunakan buku aktif tanpa perlu memilih buku lagi |
-| **Multi-Bahasa (Localization)** | **Bahasa Indonesia (`id`), English (`en`), Español (`es`)**: Format angka ribuan, mata uang, dan tanggal/jam dinamis mengikuti locale bahasa yang dipilih |
-| **Keamanan Data** | **Kunci Aplikasi dengan PIN & Biometrik** (Fingerprint / Face ID via `local_auth`) |
-| **Sistem Penghapusan** | **Soft-Delete & Tong Sampah (Trash)**: Mencegah kehilangan data buku kas & transaksi dengan fitur Restore |
-| **Ekspor Laporan** | **Ekspor PDF & Excel (.xlsx / .csv)** untuk cetak dan rekap data |
-| **Rentang Laporan** | Bulan ini, Tahun ini, dan **Custom Date Range Picker** (Bebas pilih tanggal mulai - selesai) |
-| **Framework** | Flutter 3.x (Dart 3.x) |
-| **Platform Target** | Android (API 24+) & iOS (iOS 13+) |
-| **Tampilan Desain Acuan** | Mobile Portrait 390 x 844 dp |
-| **Metode Autentikasi** | **Biometrik (Fingerprint / Face ID) + PIN** via `local_auth` (100% Offline, tanpa akun Google) |
-| **Database & Cloud Sync** | **100% Offline-First dengan Sinkronisasi Google Drive** (file `data.cashbook`) |
-| **Dukungan Tema** | **Mode Terang (Light) & Mode Gelap (Dark)** + Ikuti Sistem |
-| **Prinsip Arsitektur** | Clean Architecture (Feature-First) |
-| **Manajemen Status (State)** | `flutter_bloc` (atau `flutter_riverpod`) |
-| **Font Utama** | *Plus Jakarta Sans* / *Inter* (via `google_fonts`) |
+| **Pengembang** | **TRHAH Tech** (v1.0.0 • 100% Free & Serverless) |
+| **Sistem Pengelompokan** | **Multi-Buku Kas (Multi-Folder)**: Transaksi dikelompokkan per Buku Kas (misal: *Kas Pribadi*, *Kas Toko / Usaha*, *Kas Tabungan*). |
+| **Pusat Pemilihan Buku Kas** | **Terpusat di Beranda (Home)**: Pemilihan buku kas aktif dilakukan di Beranda via `BookDropdownSelector`. Form transaksi (`/add-income` & `/add-expense`), riwayat transaksi, dan laporan otomatis menggunakan buku kas aktif tanpa perlu memilih buku lagi. |
+| **Persistence Buku Kas** | ID buku kas aktif tersimpan secara otomatis dan persisten di `SharedPreferences` (`active_book_id`) dan file `data.cashbook` (`activeBookId`). Saat aplikasi dibuka kembali, buku aktif terakhir otomatis termuat. |
+| **Kategori Transaksi** | **Global & Smart Suggestion**: Kategori bersifat global (dapat digunakan lintas pemasukan/pengeluaran), menggunakan input *combobox / semi-dropdown* (`CategorySuggestField`), otomatis kapitalisasi kata (*Title Case*), deduplikasi *case-insensitive*, dan mengingat kategori terakhir yang dipakai (`lastUsedCategoryId`). |
+| **Keamanan Aplikasi** | **Kunci Aplikasi Native Android** (`local_auth`): Menggunakan autentikasi bawaan sistem (Biometrik / Sidik Jari / Face Unlock / PIN / Pola / Sandi perangkat). Custom in-app numeric keypad ditiadakan demi keamanan standar OS. Status tersimpan terenkripsi di `flutter_secure_storage`. |
+| **Sistem Penghapusan** | **Soft-Delete & Tong Sampah (Trash)**: Buku kas dan transaksi yang dihapus tidak langsung hilang, melainkan ditandai `isDeleted = true` dan masuk ke Tong Sampah (`/trash`). Pengguna dapat melakukan **Restore** (Pulihkan) atau **Hapus Permanen (Purge)** dengan dialog konfirmasi ganda. Tersedia juga fitur **Kosongkan Sampah (Empty Trash)**. |
+| **Penyimpanan Data** | **100% Offline-First (File `data.cashbook`)**: Seluruh data (pengaturan, buku, kategori, transaksi) disimpan dalam format JSON terstruktur di direktori dokumen internal perangkat (`getApplicationDocumentsDirectory()/data.cashbook`). |
+| **Backup & Restore Lokal** | **Android Storage Access Framework (SAF) / Native File Sharing**: <br>• **Backup**: Ekspor berkas `data.cashbook` via `share_plus` (bisa disimpan ke Google Drive, WhatsApp, File Manager, SD Card). <br>• **Restore**: Impor berkas `data.cashbook` via `file_picker` dengan dialog konfirmasi validasi JSON. |
+| **Sinkronisasi Cloud** | **Google Drive API v3**: Sinkronisasi opsional langsung ke Google Drive pengguna via tombol sinkronisasi di AppBar Beranda (`google_sign_in` & `googleapis` scope `drive.file` dan `drive.appdata`). |
+| **Laporan & Grafik** | **Grafik Batang Perbandingan (`fl_chart`) & Breakdown Kategori**: Visualisasi perbandingan pemasukan vs pengeluaran, ringkasan saldo bersih, serta breakdown persentase pengeluaran & pemasukan per kategori. |
+| **Periode Laporan** | **Semua, Bulan Ini, Bulan Lalu, Tahun Ini, & Kustom**: Pilihan rentang tanggal dinamis menggunakan `showDateRangePicker`. |
+| **Ekspor Laporan** | **Ekspor PDF (`pdf` & `printing`)** format siap cetak/bagikan, dan **Ekspor Excel (.xlsx via `excel` & `share_plus`)** tabel mutasi lengkap. |
+| **Multi-Bahasa (Localization)** | **5 Bahasa**: Bahasa Indonesia (`id` - default), English (`en`), Español (`es`), 简体中文 (`zh`), العربية (`ar` - RTL ready). Format mata uang, angka, dan tanggal menyesuaikan locale aktif. |
+| **Dukungan Tema** | **Mode Terang (Light), Mode Gelap (Dark), & Ikuti Sistem (System)** via `ThemeCubit` & `AppTheme`. |
+| **State Management** | `flutter_bloc` / Cubit (`ThemeCubit`, `LocaleCubit`, `BookCubit`, `TransactionCubit`). |
+| **Routing** | `go_router` dengan arsitektur `StatefulShellRoute.indexedStack` untuk bottom navigation. |
 
 ---
 
-## 2. Design System & Tema (Light & Dark Mode)
+## 2. Design System & Tema (Color Tokens & Typography)
 
-Aplikasi mendukung perpindahan tema **Light**, **Dark**, dan **System Default**.
+Aplikasi mengimplementasikan palet warna modern berbasis Tailwind/Emerald dengan kontras tinggi di kedua tema.
 
-### 2.1. Color Palette Tokens
+### 2.1. Color Tokens (`lib/core/constants/colors.dart`)
 
 ```dart
-import 'package:flutter/material.dart';
-
 class AppColors {
-  // Brand Color (Konsisten di kedua tema)
-  static const Color primary = Color(0xFF15803D);      // Hijau Emerald Utama
-  static const Color primaryDark = Color(0xFF0F5B2C);  // Hijau Gelap (Splash)
-  static const Color primaryLight = Color(0xFFDCFCE7); // Hijau Aksen Muda
+  // Brand Emerald
+  static const Color primary500 = Color(0xFF10B981); // Emerald Utama
+  static const Color primary600 = Color(0xFF059669);
+  static const Color primary700 = Color(0xFF047857);
 
-  // Status Transaksi
-  static const Color income = Color(0xFF16A34A);       // Hijau Pemasukan
-  static const Color expense = Color(0xFFEF4444);      // Merah Pengeluaran
-  static const Color transfer = Color(0xFF3B82F6);     // Biru Transfer
+  // Status Finansial
+  static const Color incomeGreen = Color(0xFF16A34A);  // Hijau Cash In
+  static const Color expenseRed = Color(0xFFEF4444);   // Merah Cash Out
+  static const Color blue500 = Color(0xFF3B82F6);      // Biru Info / Backup
+  static const Color amber500 = Color(0xFFF59E0B);     // Oranye Kategori
 
-  // --- Palet Light Mode ---
+  // Light Theme
   static const Color lightBackground = Color(0xFFF8FAFC); // Slate 50
-  static const Color lightSurface = Color(0xFFFFFFFF);    // Putih
-  static const Color lightCardBorder = Color(0xFFF1F5F9); // Slate 100
-  static const Color lightInputBorder = Color(0xFFE2E8F0);// Slate 200
-  static const Color lightTextPrimary = Color(0xFF0F172A);// Slate 900
-  static const Color lightTextSecondary = Color(0xFF475569); // Slate 600
-  static const Color lightTextMuted = Color(0xFF94A3B8);  // Slate 400
+  static const Color lightSurface = Color(0xFFFFFFFF);    // Pure White
+  static const Color lightCardBorder = Color(0xFFF1F5F9);
+  static const Color lightDivider = Color(0xFFF1F5F9);
+  static const Color lightTextPrimary = Color(0xFF0F172A);
+  static const Color lightTextSecondary = Color(0xFF475569);
 
-  // --- Palet Dark Mode ---
+  // Dark Theme
   static const Color darkBackground = Color(0xFF0B1120);  // Deep Dark Slate
   static const Color darkSurface = Color(0xFF1E293B);     // Slate 800
-  static const Color darkCardBorder = Color(0xFF334155);  // Slate 700
-  static const Color darkInputBorder = Color(0xFF475569); // Slate 600
-  static const Color darkTextPrimary = Color(0xFFF8FAFC); // Slate 50
-  static const Color darkTextSecondary = Color(0xFFCBD5E1); // Slate 300
-  static const Color darkTextMuted = Color(0xFF64748B);   // Slate 500
+  static const Color darkCardBorder = Color(0xFF334155);
+  static const Color darkDivider = Color(0xFF334155);
+  static const Color darkTextPrimary = Color(0xFFF8FAFC);
+  static const Color darkTextSecondary = Color(0xFFCBD5E1);
+
+  // Neutrals / Grayscale
+  static const Color gray100 = Color(0xFFF1F5F9);
+  static const Color gray200 = Color(0xFFE2E8F0);
+  static const Color gray300 = Color(0xFFCBD5E1);
+  static const Color gray400 = Color(0xFF94A3B8);
+  static const Color gray500 = Color(0xFF64748B);
+  static const Color gray600 = Color(0xFF475569);
+  static const Color gray700 = Color(0xFF334155);
+  static const Color gray800 = Color(0xFF1E293B);
+  static const Color gray900 = Color(0xFF0F172A);
 }
 ```
 
-### 2.2. Theme Management
-
-```dart
-enum AppThemeMode { light, dark, system }
-
-// ThemeData Builder untuk Light & Dark
-class AppTheme {
-  static ThemeData get lightTheme => ThemeData(
-    brightness: Brightness.light,
-    scaffoldBackgroundColor: AppColors.lightBackground,
-    colorScheme: const ColorScheme.light(
-      primary: AppColors.primary,
-      surface: AppColors.lightSurface,
-      onSurface: AppColors.lightTextPrimary,
-    ),
-    fontFamily: 'PlusJakartaSans',
-    useMaterial3: true,
-  );
-
-  static ThemeData get darkTheme => ThemeData(
-    brightness: Brightness.dark,
-    scaffoldBackgroundColor: AppColors.darkBackground,
-    colorScheme: const ColorScheme.dark(
-      primary: AppColors.primary,
-      surface: AppColors.darkSurface,
-      onSurface: AppColors.darkTextPrimary,
-    ),
-    fontFamily: 'PlusJakartaSans',
-    useMaterial3: true,
-  );
-}
-```
+### 2.2. Font & Typography
+* **Font Family**: Google Fonts *Plus Jakarta Sans* / *Inter* dengan fallback sistem.
+* **Header Kartu Saldo**: Gradient Emerald linear `[Color(0xFF047857), Color(0xFF10B981)]` dengan rounded corner 24dp dan shadow elevasi lembut.
 
 ---
 
-## 3. Arsitektur Database: 100% Offline-First & Google Drive Sync (`data.cashbook`)
-
-Aplikasi dirancang agar **dapat beroperasi penuh 100% secara offline** tanpa memerlukan koneksi internet. Pengguna dapat membuka aplikasi, mencatat pemasukan/pengeluaran, melihat grafik, dan mengelola kategori secara instan. Ketika pengguna ingin menyinkronkan data atau saat koneksi internet tersedia, data dapat disinkronkan dengan Google Drive.
-
-```text
-┌────────────────────────────────────────────────────────┐
-│               Aplikasi Cashbook Flutter                │
-└──────────────────────────────────┬─────────────────────┘
-                                   │
-                                   ▼ (100% Instan & Bekerja Tanpa Internet)
-┌────────────────────────────────────────────────────────┐
-│       Database Lokal HP (File lokal data.cashbook)     │
-│   - Catat Pemasukan / Pengeluaran                      │
-│   - Riwayat, Filter, & Grafik Laporan                  │
-│   - Status sinkronisasi: `isSynced: false`             │
-└──────────────────────────────────┬─────────────────────┘
-                                   │
-                                   ▼ (Sync Dua Arah saat Online / Tap "Sync")
-┌────────────────────────────────────────────────────────┐
-│              Google Drive Pengguna                     │
-│         (File Terisolasi: `data.cashbook`)             │
-│   - Backup Cloud Aman di Drive Pribadi                 │
-│   - Pulihkan data saat ganti perangkat baru            │
-└────────────────────────────────────────────────────────┘
-```
-
-### 3.1. Spesifikasi File `data.cashbook`
-* **Nama File**: `data.cashbook`
-* **Format Isi**: SQLite Database File atau Encrypted/Structured JSON File yang menyimpan tabel:
-  * `metadata`: Versi schema, timestamp `lastSyncedAt`, info perangkat.
-  * `categories`: Kategori default & kustom.
-  * `transactions`: Seluruh riwayat transaksi dengan metadata `updatedAt` dan `isDeleted` (soft delete).
-* **Lokasi di Google Drive**:
-  * Menggunakan **Google Drive AppData Folder** (`https://www.googleapis.com/auth/drive.appdata`) atau **Drive Files Scope** (`https://www.googleapis.com/auth/drive.file`).
-  * File tersimpan aman dan terisolasi di cloud akun Google pengguna.
-
-### 3.2. Fitur Offline Penuh (100% Offline Capability)
-1. **Tidak Ada Blokir Jaringan**: Aplikasi tidak pernah menampilkan layar loading atau error jaringan saat mencatat transaksi baru.
-2. **Penyimpanan Lokal Permanen**: Semua mutasi data ditulis langsung ke media penyimpanan internal perangkat (`getApplicationDocumentsDirectory()`).
-3. **Pending Sync Flag**: Setiap record baru/edit yang dibuat secara offline otomatis ditandai `isSynced = false`.
-
-### 3.3. Alur Kerja Sinkronisasi (Bidirectional Sync Flow)
-
-Pengguna dapat menyinkronkan data melalui 2 cara:
-* **Manual Sync**: Menekan tombol **"Sinkronkan Sekarang"** di halaman Pengaturan Akun (Screen 10).
-* **Auto Sync (Latar Belakang)**: Sinkronisasi otomatis berjalan saat aplikasi mendeteksi koneksi internet setelah sebelumnya berada dalam mode offline.
-
-#### Mekanisme Sinkronisasi:
-1. **Langkah 1 (Cek File di Google Drive)**:
-   * Query ke Google Drive: `name = 'data.cashbook' and trashed = false`.
-   * Jika file **belum ada di Drive**: Aplikasi mengunggah file `data.cashbook` lokal saat ini ke Google Drive sebagai file master perdana.
-2. **Langkah 2 (Penggabungan / Merge Data Tanpa Kehilangan Transaksi)**:
-   * Jika file **sudah ada di Drive**: Aplikasi mengunduh versi Google Drive ke memori sementara.
-   * **Smart Merge (Resolusi Konflik berbasis Timestamp)**:
-     * Transaksi lokal yang dibuat saat offline (`isSynced = false`) digabungkan dengan transaksi di Google Drive berdasarkan `id` dan `updatedAt` terbaru.
-     * Tidak ada transaksi yang tertimpa secara buta; data dari Google Drive dan data lokal digabungkan (*union with latest timestamp*).
-3. **Langkah 3 (Commit & Update)**:
-   * File `data.cashbook` hasil penggabungan disimpan kembali ke storage lokal HP.
-   * File master di Google Drive diperbarui dengan snapshot terbaru (`drive.files.update`).
-   * Semua status lokal diubah menjadi `isSynced = true`.
-   * Notifikasi/Badge di UI diperbarui menjadi *"Tersinkronisasi"*.
-
-### 3.4. Indikator Status Sinkronisasi di UI
-* 🟢 **Tersinkronisasi**: Semua data lokal cocok dengan Google Drive.
-* 🟡 **Offline (Belum Sync)**: Terdapat data transaksi offline yang belum diunggah ke Google Drive (contoh teks: *"3 transaksi belum disinkron"*).
-* 🔄 **Sedang Sinkronisasi**: Indikator loading halus saat proses upload/download berlangsung.
-
-### 3.5. Alur Pemilihan Buku Kas & Pencatatan Transaksi Terpusat
-
-1. **Pemilihan Buku Kas HANYA di Beranda (Home Screen)**:
-   * Dropdown switcher buku kas ditempatkan secara terpusat dan eksklusif di layar Beranda.
-   * Pengguna mengganti dan memilih buku kas aktif langsung di Beranda, dan preferensi ini otomatis tersimpan secara permanen (`activeBookId`).
-2. **Pencatatan Transaksi Langsung Tanpa Pilih Buku**:
-   * Saat pengguna menekan tombol **Tambah Pemasukan** (`/add-income`) atau **Tambah Pengeluaran** (`/add-expense`), form input transaksi otomatis langsung terhubung ke buku kas yang sedang aktif.
-   * **Tidak ada form/dropdown pemilihan buku kas** saat mencatat transaksi, sehingga pengalaman mencatat pengeluaran dan pemasukan menjadi sangat cepat, simpel, dan bebas hambatan.
-3. **Layar Riwayat & Laporan**:
-   * Layar Riwayat Transaksi dan Laporan Keuangan menampilkan mutasi dari buku kas yang sedang aktif terpilih di Beranda.
-4. **Buku Kas Selalu Aktif**:
-   * Tidak ada sistem penutupan buku (close/reopen) maupun mode read-only. Seluruh buku kas yang dibuat selalu aktif dan dapat dicatat serta diedit sewaktu-waktu oleh pengguna.
-
-### 3.7. Sistem Multi-Bahasa & Format Dinamis (Localization)
-1. **Pilihan Bahasa Tersedia**:
-   * 🇮🇩 **Bahasa Indonesia (`id`)**: Bahasa default aplikasi.
-   * 🇺🇸 **English (`en`)**: Bahasa internasional.
-   * 🇪🇸 **Español (`es`)**: Bahasa Spanyol.
-   * 🇨🇳 **简体中文 (`zh`)**: Bahasa Mandarin (Chinese Simplified).
-   * 🇸🇦 **العربية (`ar`)**: Bahasa Arab dengan dukungan native Directionality RTL (Right-to-Left).
-2. **Format Angka & Mata Uang Dinamis**:
-   * Menyesuaikan secara otomatis berdasarkan bahasa/locale yang dipilih pengguna:
-     * `id`: Format Rupiah `Rp 1.500.000` (titik sebagai pemisah ribuan).
-     * `en`: Format Dollar `$ 1,500,000` (koma sebagai pemisah ribuan).
-     * `es`: Format Euro `1.500.000 €`.
-     * `zh`: Format Yuan `¥ 1,500,000`.
-     * `ar`: Format Riyal `ر.س 1,500,000` / `1,500,000 ر.س`.
-3. **Format Tanggal & Waktu Dinamis**:
-   * Menyesuaikan standar lokal masing-masing negara:
-     * `id`: `20 Sep 2026, 14:30` (format 24 jam).
-     * `en`: `Sep 20, 2026, 02:30 PM` (format 12 jam dengan AM/PM).
-     * `es`: `20 sep 2026, 14:30`.
-     * `zh`: `2026年9月20日 14:30`.
-     * `ar`: `20 سبتمبر 2026، 02:30 م` (format AM/PM dalam teks Arab).
-4. **Penyimpanan Preferensi Bahasa**:
-   * Bahasa pilihan disimpan di `SharedPreferences` (`app_language_code`) dan dapat diubah secara instan di menu Pengaturan Akun tanpa perlu me-restart aplikasi.
-   * Perubahan bahasa langsung merefleksikan seluruh teks UI (Beranda, Riwayat, Laporan, Tong Sampah, Manajemen Buku, Kelola Kategori, Pengaturan Akun).
-
----
-
-## 4. Struktur Direktori Proyek (Clean Feature-First)
+## 3. Struktur Direktori Proyek
 
 ```text
 lib/
+├── main.dart                                   // Entry point: init storage, services, cubits, multi-provider
 ├── app/
-│   ├── app.dart
-│   ├── routes/
-│   │   └── app_router.dart          // go_router
-│   └── theme/
-│       ├── app_theme.dart
-│       └── theme_cubit.dart         // State Light/Dark/System
+│   ├── presentation/
+│   │   └── main_scaffold.dart                  // StatefulShellRoute BottomNavigationBar (Home, Transaksi, Laporan, Akun)
+│   └── routes/
+│       └── app_router.dart                     // GoRouter configuration, sub-routes, rootNavigatorKeys
 ├── core/
 │   ├── constants/
-│   │   ├── colors.dart
-│   │   └── strings.dart
-│   ├── services/
-│   │   ├── biometric_service.dart   // local_auth PIN & Biometric (autentikasi utama)
-│   │   ├── drive_backup_service.dart// Backup/Restore data.cashbook via Android file picker
-│   │   ├── google_drive_service.dart// Opsional: CRUD data.cashbook di Drive (tanpa OAuth)
-│   │   ├── pdf_export_service.dart  // Export rekap PDF
-│   │   └── excel_export_service.dart// Export rekap Excel (.xlsx / .csv)
+│   │   └── colors.dart                         // Palet warna Light/Dark & tokens finansial
 │   ├── database/
-│   │   ├── local_storage.dart       // Local file manager data.cashbook
-│   │   └── db_helper.dart
+│   │   └── local_storage_service.dart          // LocalStorageService singleton (baca/tulis data.cashbook, cache memori)
+│   ├── localization/
+│   │   └── app_localizations.dart              // Kamus terjemahan (id, en, es, zh, ar) & AppLocalizationsDelegate
+│   ├── services/
+│   │   ├── biometric_service.dart              // local_auth wrapper (Android biometric & system lock)
+│   │   ├── google_drive_service.dart           // Google Drive sync & file upload/download via OAuth
+│   │   ├── pdf_export_service.dart             // Generator Laporan Keuangan format PDF (A4 table & header)
+│   │   └── excel_export_service.dart           // Generator Laporan Keuangan format spreadsheet (.xlsx)
+│   ├── theme/
+│   │   └── app_theme.dart                      // ThemeData untuk Light Mode & Dark Mode
 │   └── utils/
-│       ├── currency_formatter.dart  // Rupiah format
-│       └── date_formatter.dart      // dd MMM yyyy format
+│       ├── currency_formatter.dart             // Formatter mata uang & parsing nominal ribuan (Rupiah/Dollar/Euro)
+│       └── date_formatter.dart                 // Formatter tanggal kelompok riwayat, jam, dan kop cetak
 └── features/
-    ├── auth/                        // Screen 1 & 2 (Offline-First, tanpa Google Auth)
-    │   ├── presentation/
-    │   │   ├── splash_screen.dart
-    │   │   └── login_screen.dart    // Welcome screen (first-time setup, tanpa Google button)
-    │   └── cubit/
-    │       └── auth_cubit.dart
-    ├── security/                    // Screen 1.5: PIN / Biometric Lock
+    ├── auth/presentation/
+    │   ├── splash_screen.dart                  // Layar splash: verifikasi status kunci & cek ketersediaan buku
+    │   └── login_screen.dart                   // Layar sambutan onboarding awal (jika belum ada buku kas sama sekali)
+    ├── security/presentation/
+    │   └── lock_screen.dart                    // Layar penguncian biometrik / PIN sistem native
+    ├── book/
+    │   ├── cubit/
+    │   │   └── book_cubit.dart                 // State management buku kas (load, add, select, soft-delete, restore, purge)
+    │   ├── domain/models/
+    │   │   └── book_model.dart                 // Entity BookModel (id, name, icon, color, initialBalance, isDeleted, etc)
     │   └── presentation/
-    │       └── lock_screen.dart
-    ├── dashboard/                   // Screen 3
-    │   └── presentation/
-    │       ├── home_screen.dart
+    │       ├── create_initial_book_screen.dart // Layar pembuatan buku kas perdana setelah welcome screen
+    │       ├── manage_books_screen.dart        // Layar kelola buku kas (tambah, ubah nama/ikon/warna, hapus ke sampah)
     │       └── widgets/
-    ├── transaction/                 // Screen 4, 5, 6, 7
-    │   ├── domain/models/transaction_model.dart
+    │           └── book_dropdown_selector.dart // Bottom sheet selector buku kas di layar Beranda
+    ├── category/
+    │   ├── domain/models/
+    │   │   └── category_model.dart             // Entity CategoryModel & static icon resolver
     │   └── presentation/
-    │       ├── add_income_screen.dart
-    │       ├── add_expense_screen.dart
-    │       ├── transaction_list_screen.dart
-    │       └── transaction_detail_screen.dart
-    ├── report/                      // Screen 8 (Chart, Date Range, Export)
-    │   └── presentation/
-    │       ├── report_screen.dart
+    │       ├── category_list_screen.dart       // Layar kelola kategori global
     │       └── widgets/
-    │           ├── financial_bar_chart.dart
-    │           └── custom_date_range_modal.dart
-    ├── category/                    // Screen 9
+    │           └── add_category_modal.dart     // Modal bottom sheet tambah kategori baru
+    ├── dashboard/presentation/
+    │   └── home_screen.dart                    // Layar Beranda: Dropdown buku, Kartu Saldo, Quick Action, Transaksi Terbaru
+    ├── transaction/
+    │   ├── cubit/
+    │   │   └── transaction_cubit.dart          // State management transaksi & filter mutasi
+    │   ├── domain/models/
+    │   │   └── transaction_model.dart          // Entity TransactionModel (income, expense, transfer)
     │   └── presentation/
-    │       └── category_list_screen.dart
-    ├── trash/                       // Screen 10b: Tong Sampah (Restore Books & Transaksi)
-    │   └── presentation/
-    │       └── trash_screen.dart
-    └── account/                     // Screen 10
-        └── presentation/
-            ├── account_screen.dart
-            └── widgets/
-                ├── theme_selector_dialog.dart
-                └── security_settings_tile.dart
+    │       ├── add_income_screen.dart          // Form catat pemasukan (nominal cepat, category suggestion, tanggal, simpan di AppBar)
+    │       ├── add_expense_screen.dart         // Form catat pengeluaran (nominal cepat, category suggestion, tanggal, simpan di AppBar)
+    │       ├── transaction_list_screen.dart    // Layar riwayat mutasi: search bar, quick add buttons, filter tab, grouped by date
+    │       ├── transaction_detail_screen.dart  // Layar detail: info transaksi, tombol edit, tombol pindah ke sampah
+    │       └── widgets/
+    │           └── category_suggest_field.dart // Combobox input suggestion kategori dinamis
+    ├── report/presentation/
+    │   └── report_screen.dart                  // Layar Laporan: Filter periode, Bar Chart, Breakdown Kategori, Ekspor PDF/Excel
+    ├── trash/presentation/
+    │   └── trash_screen.dart                   // Layar Tong Sampah: Tab Buku Terhapus & Tab Transaksi Terhapus (Restore/Purge)
+    ├── account/presentation/
+    │   └── account_screen.dart                 // Layar Pengaturan Akun: Backup/Restore SAF, Navigasi Buku/Kategori/Trash, Bahasa, Tema, Kunci Aplikasi, Tentang
+    ├── theme/cubit/
+    │   └── theme_cubit.dart                    // State theme mode (light, dark, system)
+    └── localization/cubit/
+        └── locale_cubit.dart                   // State bahasa aktif (id, en, es, zh, ar)
 ```
 
 ---
 
-## 5. Spesifikasi & Interaksi 10 Layar
+## 4. Alur Autentikasi, Startup, & Navigasi
 
-### Screen 1: Splash Screen (`01-splash-screen`)
-* **Route**: `/splash` (alias `/`)
-* **Elemen UI**:
-  * Background Gradient Hijau (`#15803D` ke `#0F5B2C`).
-  * Logo Dompet Putih + Typography "Cashbook" + Subtitle.
-  * Loading Indicator Bar.
-* **Logika** (100% Offline-First, tanpa cek Google Sign-In):
-  1. **Cek Kunci Aplikasi (PIN / Biometrik)**:
-     * Jika **PIN atau Biometrik aktif** → Redirect ke **Screen 1b (`/lock`)** untuk verifikasi identitas.
-     * Jika **tidak ada kunci aktif** → Lanjut ke langkah 2.
-  2. **Cek Data Buku Kas Lokal**:
-     * Jika `books.isNotEmpty` → Redirect ke `/home` (Dashboard).
-     * Jika `books.isEmpty` (first-time) → Redirect ke `/login` (Welcome Screen).
+### 4.1. Alur Startup Aplikasi (`SplashScreen`)
+```text
+[Aplikasi Dibuka]
+       │
+       ▼
+[SplashScreen (/)] ── (Delay 1000ms)
+       │
+       ├─► [Kunci Aplikasi Aktif?] ──► Ya ──► [/lock] ── (Autentikasi Berhasil) ──┐
+       │                                                                         │
+       └─► Tidak                                                                 │
+           │                                                                     │
+           ▼                                                                     ▼
+       [Cek Data Buku Kas Lokal] ◄───────────────────────────────────────────────┘
+           │
+           ├─► books.isEmpty ────────► [/login] (Welcome Screen)
+           │                                │
+           │                                ▼
+           │                         [/create-initial-book]
+           │                                │
+           │                                ▼
+           └─► books.isNotEmpty ─────► [/home] (Dashboard Beranda)
+```
 
----
+### 4.2. Rute Aplikasi (`GoRouter`)
 
-### Screen 1b: Kunci Aplikasi - PIN & Biometrik (`/lock-screen`)
-* **Route**: `/lock-screen`
-* **Kapan Ditampilkan**: Setiap kali aplikasi dibuka atau kembali dari background jika fitur keamanan diaktifkan di Screen 10.
-* **Elemen UI**:
-  * Logo Cashbook kecil di atas.
-  * Judul: *"Masukkan PIN Cashbook"* / *"Pindai Sidik Jari"*.
-  * Indikator 4/6 Dot PIN.
-  * Numeric Keypad (1–9, 0, Backspace).
-  * Tombol Ikon Biometrik di pojok bawah keypad (untuk memicu Fingerprint / Face ID via `local_auth`).
-* **Logika**:
-  * Validasi PIN lokal (disimpan terenkripsi di `flutter_secure_storage`).
-  * Prompt biometrik otomatis muncul saat layar pertama kali tampil.
-  * Jika verifikasi sukses ➔ Lanjut ke `/home` (atau `/create-initial-book`).
-  * Proteksi salah PIN: cooldown 30 detik jika salah 5 kali berturut-turut.
-
----
-
-### Screen 2: Welcome Screen / First-Time Setup (`02-login-welcome`)
-* **Route**: `/login`
-* **Kapan Ditampilkan**: **Hanya pada first-time setup** (saat `books.isEmpty` dan tidak ada PIN/Biometrik aktif).
-* **Elemen UI**:
-  * Logo dompet hijau dengan judul "Cashbook" & slogan *"Kelola keuangan, capai tujuanmu"*.
-  * Ilustrasi / animasi dompet & grafik keuangan.
-  * **Tombol Utama**: **"Mulai Menggunakan Cashbook"** (Solid Hijau Emerald).
-    * Langsung mengarah ke Screen 2b (`/create-initial-book`) tanpa login apapun.
-  * **Tombol Sekunder**: **"Pulihkan dari Backup"** (Outlined, icon restore).
-    * Memunculkan Android native file picker (SAF - Storage Access Framework) untuk memilih file backup `.cashbook` atau file backup lainnya.
-    * Tidak membutuhkan akun Google atau OAuth — pengguna cukup pilih file dari lokasi mana saja (Drive, WhatsApp, dll).
-  * Badge kecil di bawah: 🔒 *"100% Lokal & Aman di Perangkat Anda"*
-* **Logika**:
-  * Klik **"Mulai"** → Arahkan ke `/create-initial-book`.
-  * Klik **"Pulihkan dari Backup"** → Buka `FilePicker` / Android SAF → Baca file backup → Restore data lokal → Arahkan ke `/home`.
+| Path | Nama Layar | Deskripsi & Parameter |
+|---|---|---|
+| `/` | `SplashScreen` | Layar splash & routing awal. |
+| `/lock` | `LockScreen` | Layar penguncian biometrik / PIN native. |
+| `/login` | `LoginScreen` | Layar sambutan first-time user (Mulai / Pulihkan Backup). |
+| `/create-initial-book` | `CreateInitialBookScreen` | Form onboarding pembuatan buku kas pertama. |
+| `/home` | `HomeScreen` | Shell Tab 0: Dashboard Beranda, Saldo, Quick Action. |
+| `/transactions` | `TransactionListScreen` | Shell Tab 1: Riwayat Transaksi & Pencarian. |
+| `/report` | `ReportScreen` | Shell Tab 2: Grafik, Ringkasan, Ekspor PDF/Excel. |
+| `/account` | `AccountScreen` | Shell Tab 3: Pengaturan Akun, Backup, Bahasa, Tema. |
+| `/add-income` | `AddIncomeScreen` | Form catat pemasukan. Menerima `extra: TransactionModel?` untuk mode edit. |
+| `/add-expense` | `AddExpenseScreen` | Form catat pengeluaran. Menerima `extra: TransactionModel?` untuk mode edit. |
+| `/transaction-detail/:id` | `TransactionDetailScreen` | Detail transaksi berdasarkan ID parameter. |
+| `/manage-books` | `ManageBooksScreen` | Layar manajemen buku kas (CRUD & status). |
+| `/categories` | `CategoryListScreen` | Layar kelola kategori global. |
+| `/trash` | `TrashScreen` | Layar Tong Sampah (Buku & Transaksi terhapus). |
 
 ---
 
-### Screen 2b: Onboarding - Buat Buku Kas Pertama (`/create-initial-book`)
-* **Route**: `/create-initial-book`
-* **Kapan Ditampilkan**: **Hanya ketika pertama kali user membuka aplikasi dan belum memiliki Buku Kas sama sekali**.
-* **Elemen UI**:
-  * Header Sambutan:
-    * Icon dompet/buku elegan.
-    * Judul: *"Selamat Datang di Cashbook! 🎉"*
-    * Subjudul: *"Mari buat Buku Kas pertama Anda untuk mulai mencatat keuangan (misal: Kas Pribadi atau Kas Usaha)."*
-  * Form Pembuatan Buku Perdana:
-    1. **Nama Buku Kas**: Input teks (contoh: *"Kas Pribadi"*).
-    2. **Quick Chips (Saran Nama Cepat)**: `[💼 Kas Pribadi]` `[🏪 Kas Toko / Usaha]` `[🏠 Kas Rumah Tangga]` `[💰 Tabungan]`.
-    3. **Pilihan Ikon**: Pilihan icon representatif (Dompet, Toko, Keranjang, Rumah, Mobil, Briefcase).
-    4. **Pilihan Warna Tema**: Palette bulat pilihan warna (Hijau Emerald, Biru, Oranye, Ungu, Teal).
-    5. **Saldo Awal (Opsional)**: Input nominal (default `Rp 0`).
-  * Tombol Aksi: **"Mulai Menggunakan Cashbook"** (Solid Hijau Emerald `#15803D`).
-* **Logika Eksekusi**:
-  * Membuat record `BookModel` pertama.
-  * Menetapkan ID buku tersebut sebagai `activeBookId`.
-  * Men-generate kategori default pemasukan & pengeluaran.
-  * Menyimpan file perdana `data.cashbook` secara lokal dan men-trigger pembuatan file di Google Drive.
-  * Redirect ke `/home` (Dashboard) dengan buku kas baru tersebut aktif dan siap pakai.
+## 5. Business Logic Fitur Utama
+
+### 5.1. Sistem Multi-Buku Kas (Multi-Folder)
+1. **Pusat Penggantian Buku Hanya di Beranda**:
+   * Switcher buku kas (`BookDropdownSelector`) ditempatkan tepat di bawah logo aplikasi pada layar Beranda.
+   * Menampilkan nama buku aktif, ikon, warna tema, dan tombol chevron down.
+   * Mengetuk selector akan membuka modal bottom sheet yang menampilkan seluruh buku kas aktif (`isDeleted == false`) beserta tombol pintas **"Kelola"** yang mengarah ke `/manage-books`.
+2. **Keterikatan Transaksi ke Buku Aktif**:
+   * Saat pengguna membuka form **Tambah Pemasukan** (`/add-income`) atau **Tambah Pengeluaran** (`/add-expense`), transaksi otomatis terikat pada `activeBookId` saat itu.
+   * Form transaksi **tidak menampilkan dropdown pemilihan buku**, meminimalkan friksi pengguna saat mencatat keuangan harian.
+3. **Penyaringan Riwayat & Laporan**:
+   * Layar Transaksi dan Laporan otomatis menampilkan mutasi milik buku kas aktif (`t.bookId == activeBookId`).
+   * Begitu buku aktif diganti di Beranda, `BookCubit` memperbarui state dan mentrigger `TransactionCubit.loadTransactions(newBookId)` sehingga seluruh tab sinkron seketika.
+4. **Kalkulasi Saldo Buku**:
+   $$\text{Saldo} = \text{Saldo Awal (initialBalance)} + \sum \text{Pemasukan} - \sum \text{Pengeluaran} \pm \sum \text{Transfer}$$
+   * Jika transaksi transfer: memotong buku asal (`tx.bookId`) dan menambah buku tujuan (`tx.targetBookId`).
+5. **Manajemen Buku Kas (`ManageBooksScreen`)**:
+   * Menambah buku kas baru (nama, pilihan ikon, pilihan warna tema, saldo awal opsional).
+   * Mengubah buku kas yang ada.
+   * Menghapus buku kas: dilakukan secara *soft-delete* (masuk ke `/trash`). Jika buku yang dihapus adalah buku aktif, sistem otomatis memilih buku aktif lain yang tersisa.
+
+### 5.2. Sistem Kategori & Smart Suggestion (`CategorySuggestField`)
+1. **Kategori Global**:
+   * Kategori bersifat universal, dapat dipilih untuk transaksi pemasukan maupun pengeluaran.
+2. **Combobox Suggestion Dinamis**:
+   * Pengguna dapat memilih kategori dari daftar drop-down suggestion atau langsung mengetik nama kategori baru.
+   * Input teks otomatis diformat menjadi huruf kapital setiap awal kata (*Title Case*) via helper `CategoryModel.capitalizeWords()`.
+3. **Auto-Upsert & Anti-Duplikasi**:
+   * Sebelum transaksi disimpan, sistem melakukan `storage.upsertCategory()`.
+   * Jika kategori dengan nama yang sama (case-insensitive) sudah ada di database, sistem menggunakan ID kategori lama tanpa membuat duplikasi.
+   * Jika belum ada, kategori baru otomatis dibuat dan disimpan ke database `data.cashbook`.
+4. **Penyimpanan Kategori Terakhir Digunakan (`lastUsedCategoryId`)**:
+   * Sistem mencatat ID kategori terakhir yang digunakan untuk pemasukan (`last_category_income`) dan pengeluaran (`last_category_expense`) di `settings`.
+   * Saat form dibuka berikutnya, kategori terakhir otomatis diprioritaskan di urutan teratas suggestion.
+
+### 5.3. Form Input Transaksi (`AddIncomeScreen` & `AddExpenseScreen`)
+1. **Tombol Simpan di AppBar**:
+   * Tombol aksi **Simpan** (atau **Perbarui** saat mode edit) ditempatkan secara ergonomis di kanan atas `AppBar` (`actions`).
+2. **Pilihan Nominal Cepat (Quick Amount Pills)**:
+   * Tersedia tombol chip nominal cepat: `+Rp 50.000`, `+Rp 100.000`, `+Rp 500.000`, `+Rp 1.000.000`, `+Rp 2.500.000`, `+Rp 5.000.000`.
+   * Mengetuk chip langsung mengisi nilai pada kolom nominal.
+3. **Format Angka Dinamis**:
+   * Input nominal mendukung separator ribuan dinamis sesuai locale pengguna melalui `CurrencyFormatter`.
+4. **Pemilihan Tanggal**:
+   * Default tanggal transaksi adalah hari ini (`DateTime.now()`). Pengguna dapat memilih tanggal melalui kalender `showDatePicker`.
+5. **Catatan Tambahan**:
+   * Kolom input teks opsional untuk keterangan detail mutasi kasir.
+6. **Mode Edit Transaksi**:
+   * Form yang sama dapat menerima parameter `TransactionModel` via `state.extra`. Kolom nominal, tanggal, kategori, dan catatan otomatis terisi sesuai data transaksi lama.
+
+### 5.4. Riwayat Transaksi (`TransactionListScreen`)
+1. **Sticky Top Bar**:
+   * **Pencarian Real-Time**: Kolom pencarian teks yang memfilter mutasi berdasarkan nama kategori dan catatan secara instan, dilengkapi tombol clear (`X`).
+   * **Tombol Cepat Tambah Transaksi**: Tombol **+ Pemasukan** (hijau) dan **- Pengeluaran** (merah) tepat di bawah search bar untuk kemudahan pencatatan langsung dari tab riwayat.
+   * **Filter Tab**: Filter mutasi `Semua`, `Masuk (Pemasukan)`, dan `Keluar (Pengeluaran)`.
+2. **Pengelompokan Berdasarkan Tanggal**:
+   * Transaksi dikelompokkan per tanggal kalender (contoh: *"Hari Ini"*, *"Kemarin"*, atau *"12 Okt 2026"*).
+3. **Aksi Item Transaksi**:
+   * Mengetuk item membuka detail transaksi (`/transaction-detail/:id`).
+
+### 5.5. Detail & Soft-Delete Transaksi (`TransactionDetailScreen`)
+1. **Tampilan Detail**:
+   * Menampilkan ikon kategori besar, tipe transaksi, nominal besar dengan warna status, tanggal & jam mutasi, serta catatan.
+2. **Ubah Transaksi**:
+   * Tombol edit di AppBar mengarahkan ke form tambah dengan mode edit (`context.push(route, extra: tx)`).
+3. **Pindahkan ke Sampah**:
+   * Tombol hapus memunculkan dialog konfirmasi soft-delete. Jika disetujui, mutasi ditandai `isDeleted = true` dan dipindahkan ke Tong Sampah.
+
+### 5.6. Laporan Keuangan & Ekspor (`ReportScreen`)
+1. **Pemilihan Rentang Waktu (Period Selector)**:
+   * `Semua (All)`: Seluruh riwayat transaksi buku aktif.
+   * `Bulan Ini (This Month)`: Tanggal 1 s.d. hari ini / akhir bulan kalender berjalan.
+   * `Bulan Lalu (Last Month)`: Rekap bulan kalender sebelumnya.
+   * `Tahun Ini (This Year)`: Dari 1 Januari s.d. hari ini pada tahun berjalan.
+   * `Kustom (Custom Range)`: Menggunakan modal `showDateRangePicker` untuk memilih rentang tanggal bebas (misal: siklus gajian *25 Sep – 24 Okt*).
+2. **Ringkasan Finansial**:
+   * Menampilkan Total Pemasukan, Total Pengeluaran, dan Saldo Bersih (*Net Balance*).
+3. **Grafik Aliran Kas (`BarChart` via `fl_chart`)**:
+   * Batang Hijau: Total Pemasukan pada periode terpilih.
+   * Batang Merah: Total Pengeluaran pada periode terpilih.
+4. **Daftar Rincian Kategori (Breakdown List)**:
+   * Daftar pengeluaran dan pemasukan per kategori beserta nominal dan bilah persentase proporsi.
+5. **Ekspor Laporan Resmi**:
+   * **PDF Export (`PdfExportService`)**: Men-generate berkas A4 resmi berisi kop judul buku kas, rentang periode, ringkasan saldo, dan tabel rincian mutasi (No, Tanggal, Jam, Kategori, Tipe, Catatan, Nominal). Membuka sheet preview/print/share native via library `printing`.
+   * **Excel Export (`ExcelExportService`)**: Men-generate berkas spreadsheet `.xlsx` terstruktur dan langsung membuka Android Share Sheet via `share_plus`.
+
+### 5.7. Tong Sampah & Pemulihan Data (`TrashScreen`)
+1. **Tab Navigasi**:
+   * **Buku Kas Terhapus**: Menampilkan buku-buku kas berstatus `isDeleted = true`.
+   * **Transaksi Terhapus**: Menampilkan transaksi berstatus `isDeleted = true`.
+2. **Aksi per Item**:
+   * **Pulihkan (Restore)**: Mengembalikan buku atau transaksi ke daftar aktif (`isDeleted = false`).
+   * **Hapus Permanen (Purge)**: Menghapus data secara permanen dari file `data.cashbook` dengan dialog konfirmasi merah.
+3. **Kosongkan Sampah (Empty Trash)**:
+   * Tombol di AppBar untuk membersihkan seluruh buku dan transaksi yang terhapus sekaligus secara permanen.
+
+### 5.8. Keamanan & Kunci Aplikasi (`BiometricService` & `LockScreen`)
+1. **Integrasi Keamanan Sistem Android (`local_auth`)**:
+   * Aplikasi memanfaatkan dialog autentikasi native sistem Android (`biometricOnly: false`).
+   * Mendukung Fingerprint, Face Unlock, PIN, Pola, atau Sandi yang telah dikonfigurasi di pengaturan keamanan perangkat pengguna.
+2. **Aktivasi di Layar Pengaturan**:
+   * Pengguna mengaktifkan/menonaktifkan kunci aplikasi via toggle switch di Pengaturan Akun.
+   * Menyalakan atau mematikan toggle mewajibkan verifikasi autentikasi biometrik/PIN perangkat terlebih dahulu.
+   * Status tersimpan di `flutter_secure_storage` (`app_lock_enabled`).
+3. **Layar Penguncian (`LockScreen`)**:
+   * Muncul saat aplikasi dibuka jika kunci aktif.
+   * Memunculkan prompt keamanan native secara otomatis.
+   * Jika gagal atau dibatalkan, terdapat tombol **"Buka Kunci"** untuk memicu ulang dialog autentikasi.
+   * Setelah sukses, pengguna diarahkan ke `/home`.
+
+### 5.9. Backup, Restore, & Google Drive Sync
+1. **Penyimpanan Lokal (`LocalStorageService`)**:
+   * File database: `getApplicationDocumentsDirectory()/data.cashbook`.
+   * Format isi: JSON terstruktur yang memuat metadata, settings, books, categories, dan transactions.
+2. **Backup Lokal (Android SAF / Share Sheet)**:
+   * Di menu Pengaturan Akun: tombol **"Cadangkan (Backup)"** memicu `_handleBackup()`.
+   * File `data.cashbook` dibagikan via `share_plus` (bisa disimpan ke Google Drive pribadi, WhatsApp, File Manager lokal, SD Card, dll) tanpa memerlukan integrasi API rumit.
+3. **Restore Lokal (File Picker)**:
+   * Di menu Pengaturan Akun: tombol **"Pulihkan (Restore)"** membuka `file_picker`.
+   * Pengguna memilih berkas `data.cashbook`.
+   * Sistem memvalidasi integritas JSON, menimpa berkas lokal perangkat, dan memuat ulang `BookCubit` serta `TransactionCubit` secara reaktif.
+4. **Sinkronisasi Google Drive Langsung (`GoogleDriveService`)**:
+   * Ikon awan sinkronisasi (`cloud_sync_outlined`) di AppBar Beranda.
+   * Melakukan sign-in Google via `google_sign_in` dengan scope `drive.file` dan `drive.appdata`.
+   * Mencari berkas `data.cashbook` di Drive. Jika belum ada, file lokal diunggah. Jika sudah ada, file digabungkan/diperbarui.
+
+### 5.10. Multi-Bahasa (Localization) & Tema
+1. **5 Pilihan Bahasa**:
+   * `id`: Bahasa Indonesia (Default)
+   * `en`: English
+   * `es`: Español
+   * `zh`: 简体中文
+   * `ar`: العربية (Dukungan RTL)
+2. **Pergantian Instan**:
+   * Pengguna memilih bahasa di Pengaturan Akun melalui modal dialog. Pilihan disimpan di `SharedPreferences` (`app_language_code`) dan langsung memperbarui seluruh antarmuka aplikasi via `LocaleCubit` tanpa restart.
+3. **Pergantian Tema**:
+   * Mode Terang, Mode Gelap, dan Ikuti Sistem dikelola via `ThemeCubit` dan tersimpan di `SharedPreferences`.
 
 ---
 
-### Screen 3: Home / Dashboard (`03-home-dashboard`)
-* **Route**: `/home`
-* **Elemen UI & Layout Header**:
-  * **Area Logo & Dropdown Books (Top Header)**:
-    1. **Logo & Nama Aplikasi**: Logo Cashbook di pojok kiri atas, lonceng notifikasi (dengan unread badge) di pojok kanan atas.
-    2. **Dropdown Books (Tepat di Bawah Logo)**:
-       * Berupa selector dropdown elegan: `[ 💼 Kas Pribadi ▾ ]` dengan icon buku/folder, nama buku aktif, dan icon panah chevron down.
-       * Tap dropdown membuka **BottomSheet / Dialog Pilih Buku Kas**:
-         * Menampilkan daftar seluruh Buku Kas (`books`) yang tersedia (misal: *Kas Pribadi*, *Kas Usaha / Toko*, *Kas Tabungan*).
-         * Setiap item menampilkan nama buku, ikon, warna tema, dan saldo buku saat ini.
-         * Tombol aksi di bagian bawah: **"+ Buat Buku Kas Baru"**.
-  * **Logika Persistence Buku Aktif (Last Active Book)**:
-    * **Setiap kali user membuka aplikasi**: Sistem otomatis langsung memuat dan mengarah ke **`books` terakhir yang aktif** (disimpan di `activeBookId` pada `shared_preferences` / `data.cashbook`).
-    * Pengguna tidak perlu memilih ulang buku kas setiap kali membuka aplikasi.
-  * **Penyajian Data Berdasarkan Buku Aktif**:
-    * **Semua data Cash Out (Pengeluaran) & Cash In (Pemasukan) yang ditampilkan SELALU difilter ketat berdasarkan `books` yang sedang aktif (`bookId == activeBookId`)**.
-    * Begitu pengguna mengganti buku di dropdown, seluruh komponen UI langsung me-refresh seketika untuk buku tersebut.
-  * **Kartu Saldo**:
-    * Menampilkan Saldo khusus untuk Buku Kas yang sedang aktif.
-    * Tombol sembunyikan nominal (icon mata).
-    * Saldo dihitung: `Total Pemasukan Buku Aktif - Total Pengeluaran Buku Aktif`.
-  * **Quick Action Buttons**:
-    * 🟢 Tambah Pemasukan (`/transaction/add-income`): Otomatis mengarah ke buku aktif.
-    * 🔴 Tambah Pengeluaran (`/transaction/add-expense`): Otomatis memotong saldo buku aktif.
-    * 🔵 **Transfer**: Memindahkan saldo dari buku kas aktif ke buku kas lainnya.
-  * **Ringkasan Bulan Ini**: Total Pemasukan, Pengeluaran, dan Selisih untuk buku aktif pada bulan terpilih.
-  * **Transaksi Terbaru**: Menampilkan 3-5 catatan riwayat cash in/out terbaru milik buku aktif + link "Lihat Semua".
-  * **Bottom Navigation Bar**: Beranda, Transaksi, Laporan, Akun.
+## 6. Spesifikasi Struktur Data (`data.cashbook`) & Data Models
 
----
-
-### Screen 4: Tambah Pemasukan (`04-tambah-pemasukan`)
-* **Route**: `/add-income`
-* **Elemen UI**:
-  * Input Nominal (format otomatis ribuan Rupiah, misal `Rp 1.000.000`).
-  * Quick Amount Pills (+10.000, +50.000, +100.000, dll).
-  * Pemilihan Kategori Pemasukan (Gaji, Penjualan, Investasi, dll).
-  * Pemilihan Tanggal (Date picker, default hari ini).
-  * Catatan Transaksi (opsional).
-  * Tombol **Simpan**.
-* **Logika**:
-  * Otomatis menyimpan transaksi ke **buku kas yang sedang aktif** (`activeBookId`) tanpa perlu memilih buku lagi.
-  * Simpan ke penyimpanan lokal `data.cashbook`.
-
----
-
-### Screen 5: Tambah Pengeluaran (`05-tambah-pengeluaran`)
-* **Route**: `/add-expense`
-* **Elemen UI**:
-  * Input Nominal (`Rp 250.000`).
-  * Quick Amount Pills (+10.000, +50.000, +100.000, dll).
-  * Pemilihan Kategori Pengeluaran (Makan & Minum, dll).
-  * Pemilihan Tanggal & Catatan.
-  * Tombol **Simpan**.
-* **Logika**:
-  * Otomatis mengurangi saldo dari **buku kas yang sedang aktif** (`activeBookId`) tanpa perlu memilih buku lagi.
-  * Simpan ke penyimpanan lokal `data.cashbook`.
-
----
-
-### Screen 6: Daftar Transaksi (`06-daftar-transaksi`)
-* **Route**: `/transactions`
-* **Elemen UI**:
-  * Search Bar & Filter Pills: `Semua` | `Pemasukan (Cash In)` | `Pengeluaran (Cash Out)`.
-  * Grouping berdasarkan Tanggal (contoh: "12 Okt 2025").
-  * **Data Transaksi**: Menampilkan riwayat transaksi milik **Buku Kas yang sedang aktif** (dipilih dari Beranda).
-* **Interaksi**: Klik item membuka Screen 7 (Detail Transaksi).
-
----
-
-### Screen 7: Detail Transaksi (`07-detail-transaksi`)
-* **Route**: `/transaction/detail/:id`
-* **Elemen UI**:
-  * Hero Section: Icon kategori besar, judul transaksi, nominal besar.
-  * List info: Kategori, Tanggal & Waktu, Catatan.
-  * Tombol **Edit** & Tombol **Hapus** (dengan pop-up dialog konfirmasi).
-* **Logika**:
-  * Jika dihapus ➔ Hapus dari `data.cashbook` lokal dan sync ke Google Drive.
-
----
-
-### Screen 8: Laporan Keuangan & Ekspor (`08-laporan`)
-* **Route**: `/reports`
-* **Elemen UI**:
-  * **Header**: Judul "Laporan" + Indikator Buku Kas Aktif.
-  * **Periode Selector Tabs**:
-    * `Bulan ini`: Menampilkan data bulan kalender aktif.
-    * `Tahun ini`: Menampilkan rekap tahun berjalan.
-    * `Custom (Rentang Tanggal Khusus)`:
-      * Tap membuka **DateRangePicker Modal** interaktif (pilih Tanggal Mulai dan Tanggal Selesai, misal: *25 Sep 2025 – 24 Okt 2025* untuk siklus gajian).
-      * Menampilkan badge rentang tanggal terpilih di bawah tab.
-  * **Kartu Ringkasan (Buku Aktif)**: Total Pemasukan, Total Pengeluaran, Selisih Bersih milik buku kas yang sedang aktif pada rentang waktu terpilih.
-  * **Grafik Keuangan** (Bar Chart menggunakan library `fl_chart`):
-    * Menampilkan tren perbandingan pemasukan vs pengeluaran.
-    * Batang Hijau: Pemasukan (Cash In).
-    * Batang Merah: Pengeluaran (Cash Out).
-  * **Aksi Ekspor Laporan (Export Action Buttons)**:
-    * **`[ 📄 Ekspor PDF ]`**:
-      * Men-generate file PDF resmi yang siap dicetak atau dibagikan via WhatsApp.
-      * Format: Kop Laporan Cashbook, Nama Buku Kas, Periode Tanggal, Tabel Ringkasan Keuangan, dan Rincian Seluruh Transaksi.
-    * **`[ 📊 Ekspor Excel (.xlsx / .csv) ]`**:
-      * Men-generate spreadsheet tabel lengkap dengan kolom: *No, Tanggal, Jam, Tipe (In/Out), Kategori, Keterangan, Nominal, dan Catatan*.
-
----
-
-### Screen 9: Kategori (`09-kategori`)
-* **Route**: `/categories`
-* **Elemen UI**:
-  * Switcher: Tab Pemasukan & Tab Pengeluaran.
-  * List Kategori dengan icon dan background warna unik (Makan & Minum, Transportasi, Belanja, Kesehatan, Pendidikan, Hiburan, Tagihan, Lainnya).
-  * Tombol tambah kategori custom.
-
----
-
-### Screen 10: Pengaturan Akun (`10-pengaturan-akun`)
-* **Route**: `/account`
-* **Elemen UI**:
-  * **Header Lokal** (tanpa avatar Google): Icon perangkat + teks *"Mode Lokal — Data Tersimpan di Perangkat"*.
-  * Menu List Lengkap:
-    1. **Kelola Buku Kas / Folder**:
-       * Menampilkan jumlah buku kas (contoh: *"2 Buku Kas Aktif"*).
-       * Tap membuka halaman manajemen Buku: tambah buku baru, edit nama, pilih warna & icon tema, atau pindahkan ke Tong Sampah.
-    2. **Keamanan & Kunci Aplikasi**:
-       * Status badge: *Aktif (PIN & Biometrik)* / *Nonaktif*.
-       * Tap membuka sheet konfigurasi:
-         * Toggle Kunci PIN (input & konfirmasi 4/6 digit PIN).
-         * Toggle Kunci Biometrik (Sidik Jari / Face ID).
-         * Menu "Ubah PIN".
-    3. **Backup & Pemulihan Data** (via Android Native — 100% Gratis):
-       * **"Backup ke Google Drive"** / **"Simpan Backup ke..."**:
-         * Menggunakan Android SAF (`share_plus` atau `file_picker`) untuk menyimpan file `data.cashbook` ke lokasi pilihan pengguna (Drive, SD Card, dll).
-         * Tidak memerlukan login Google / OAuth.
-       * **"Pulihkan dari Backup"**:
-         * Membuka file picker → pengguna pilih file backup `data.cashbook` → data di-restore ke perangkat.
-       * Menampilkan info: *"Backup Terakhir: 12 Okt 2025, 09:10"*.
-    4. **Tong Sampah / Trash**:
-       * Menampilkan badge jumlah item terhapus (misal: *"1 Buku Kas di Sampah"*).
-       * Tap membuka **Screen 10b (`/trash`)**.
-    5. **Tema**: Toggle Mode Terang, Gelap, atau Ikuti Sistem.
-    6. **Notifikasi**: Atur jadwal pengingat catat kasir harian.
-    7. **Tentang Cashbook**: Versi aplikasi dan lisensi.
-
----
-
-### Screen 10b: Tong Sampah / Trash (`/trash`)
-* **Route**: `/trash`
-* **Tujuan**: Mencegah kehilangan data buku kas dan transaksi akibat ketidaksengajaan pengguna melalui mekanisme **Soft-Delete**.
-* **Elemen UI**:
-  * Header: Tombol kembali + Title "Tong Sampah".
-  * Switcher Tab: **`Buku Kas Terhapus`** & **`Transaksi Terhapus`**.
-  * **Tab Buku Kas Terhapus**:
-    * Daftar buku kas dengan status `isDeleted = true`.
-    * Menampilkan nama buku, tanggal dihapus, dan total transaksi yang ada di dalamnya.
-    * Tombol per item:
-      * 🔄 **"Pulihkan (Restore)"**: Mengembalikan buku kas dan seluruh transaksinya ke status aktif (`isDeleted = false`).
-      * 🗑️ **"Hapus Permanen"**: Menghapus total buku dan transaksinya dari database lokal & Google Drive (memerlukan konfirmasi PIN/dialog peringatan merah ganda).
-  * **Tab Transaksi Terhapus**:
-    * Menampilkan list transaksi yang dihapus secara individual.
-    * Tombol: "Pulihkan" atau "Hapus Permanen".
-
----
-
-## 6. Struktur Data File `data.cashbook` & Data Models
-
-### 6.1. Skema JSON/Database di dalam file `data.cashbook`:
+### 6.1. Skema File `data.cashbook`
 
 ```json
 {
   "version": 1,
-  "lastSyncedAt": "2025-10-12T09:10:00Z",
-  "activeBookId": "book_1",
-  "deviceInfo": "Pixel 7 Pro",
-  "user": {
-    "email": "andi@example.com",
-    "name": "Andi Pratama"
-  },
+  "lastSyncedAt": "2026-09-21T17:30:00.000Z",
+  "activeBookId": "book_1726912345678",
   "settings": {
     "theme": "system",
     "currency": "IDR",
     "hideBalance": false,
+    "last_category_income": "cat_salary",
+    "last_category_expense": "cat_food",
     "security": {
       "pinEnabled": false,
       "biometricEnabled": false
@@ -545,197 +369,223 @@ lib/
   },
   "books": [
     {
-      "id": "book_1",
+      "id": "book_1726912345678",
       "name": "Kas Pribadi",
-      "icon": "wallet",
-      "color": "#15803D",
-      "description": "Pengeluaran harian dan gaji",
-      "initialBalance": 0,
-      "createdAt": "2025-10-01T00:00:00Z",
-      "updatedAt": "2025-10-12T09:10:00Z",
-      "isDeleted": false,
-      "deletedAt": null
-    },
-    {
-      "id": "book_2",
-      "name": "Kas Toko / Usaha",
-      "icon": "store",
-      "color": "#3B82F6",
-      "description": "Operasional penjualan toko",
-      "initialBalance": 1000000,
-      "createdAt": "2025-10-01T00:00:00Z",
-      "updatedAt": "2025-10-12T09:10:00Z",
+      "icon": "briefcase",
+      "color": "#10B981",
+      "colorValue": 4279302529,
+      "description": "Catatan keuangan pribadi harian",
+      "initialBalance": 0.0,
+      "isReadOnly": false,
+      "sharedBy": null,
+      "isClosed": false,
+      "closedAt": null,
+      "createdAt": "2026-09-21T08:00:00.000Z",
+      "updatedAt": "2026-09-21T08:00:00.000Z",
       "isDeleted": false,
       "deletedAt": null
     }
   ],
   "categories": [
-    { "id": "cat_1", "name": "Gaji", "type": "income", "icon": "wallet", "color": "#16A34A" },
-    { "id": "cat_2", "name": "Makan & Minum", "type": "expense", "icon": "utensils", "color": "#EF4444" },
-    { "id": "cat_3", "name": "Transportasi", "type": "expense", "icon": "car", "color": "#F97316" }
+    {
+      "id": "cat_salary",
+      "name": "Gaji",
+      "type": "income",
+      "icon": "wallet",
+      "color": "#16A34A",
+      "colorValue": 4280145738
+    },
+    {
+      "id": "cat_food",
+      "name": "Makan & Minum",
+      "type": "expense",
+      "icon": "utensils",
+      "color": "#EF4444",
+      "colorValue": 4293862468
+    }
   ],
   "transactions": [
     {
-      "id": "tx_1001",
-      "bookId": "book_1",
-      "title": "Makan Siang",
-      "amount": 45000,
+      "id": "tx_1726912399999",
+      "bookId": "book_1726912345678",
+      "targetBookId": null,
+      "title": "Makan & Minum",
+      "categoryName": "Makan & Minum",
+      "amount": 25000.0,
       "type": "expense",
-      "categoryId": "cat_2",
-      "date": "2025-10-12T12:30:00Z",
-      "note": "Makan siang di warung",
-      "isSynced": true,
+      "categoryId": "cat_food",
+      "date": "2026-09-21T12:30:00.000Z",
+      "transactionDate": "2026-09-21T12:30:00.000Z",
+      "note": "Makan siang warteg",
+      "isSynced": false,
       "isDeleted": false,
       "deletedAt": null,
-      "createdAt": "2025-10-12T12:30:00Z",
-      "updatedAt": "2025-10-12T12:30:00Z"
+      "createdAt": "2026-09-21T12:30:00.000Z",
+      "updatedAt": "2026-09-21T12:30:00.000Z"
     }
   ]
 }
 ```
 
-### 6.2. Dart Entity Models
+### 6.2. Entity Models Dart
 
-#### Model `BookModel` (Parent Folder / Grup Buku Kas)
+#### `BookModel` (`lib/features/book/domain/models/book_model.dart`)
 ```dart
 class BookModel {
   final String id;
   final String name;
-  final String icon;        // Material / Lucide Icon Name
-  final int colorValue;     // Hex ARGB
+  final String icon;          // briefcase, store, home, savings, payments, restaurant
+  final int colorValue;       // Hex ARGB int
   final String? description;
   final double initialBalance;
+  final bool isReadOnly;
+  final String? sharedBy;
+  final bool isClosed;
+  final DateTime? closedAt;
   final DateTime createdAt;
   final DateTime updatedAt;
   final bool isDeleted;
   final DateTime? deletedAt;
 
-  BookModel({
-    required this.id,
-    required this.name,
-    required this.icon,
-    required this.colorValue,
-    this.description,
-    this.initialBalance = 0.0,
-    required this.createdAt,
-    required this.updatedAt,
-    this.isDeleted = false,
-    this.deletedAt,
-  });
+  String get color =>
+      '#${(colorValue & 0xFFFFFF).toRadixString(16).padLeft(6, '0').toUpperCase()}';
+
+  // copyWith, toJson, fromJson
 }
 ```
 
-#### Model `TransactionModel` (Child Item di bawah Buku Kas)
+#### `CategoryModel` (`lib/features/category/domain/models/category_model.dart`)
+```dart
+enum CategoryType { income, expense }
+
+class CategoryModel {
+  final String id;
+  final String name;          // Selalu terkapitalisasi rapi (Title Case)
+  final CategoryType type;
+  final String icon;          // wallet, store, utensils, car, shopping-cart, dll
+  final int colorValue;
+
+  String get color =>
+      '#${(colorValue & 0xFFFFFF).toRadixString(16).padLeft(6, '0').toUpperCase()}';
+
+  static String capitalizeWords(String input) {
+    final trimmed = input.trim();
+    if (trimmed.isEmpty) return '';
+    return trimmed.split(RegExp(r'\s+')).map((word) {
+      if (word.isEmpty) return '';
+      return word[0].toUpperCase() + (word.length > 1 ? word.substring(1) : '');
+    }).join(' ');
+  }
+
+  static IconData getIconData(String iconName); // Resolver ke Material Icons
+}
+```
+
+#### `TransactionModel` (`lib/features/transaction/domain/models/transaction_model.dart`)
 ```dart
 enum TransactionType { income, expense, transfer }
 
 class TransactionModel {
   final String id;
-  final String bookId;            // Relasi ke Parent BookModel
-  final String? targetBookId;     // Digunakan jika type == TransactionType.transfer
-  final String title;
+  final String bookId;
+  final String? targetBookId; // Digunakan jika type == TransactionType.transfer
+  final String title;         // Nama Kategori / Keterangan Transaksi
   final double amount;
   final TransactionType type;
   final String categoryId;
   final DateTime date;
-  final String? note;
+  final String note;
   final bool isSynced;
   final bool isDeleted;
   final DateTime? deletedAt;
   final DateTime createdAt;
   final DateTime updatedAt;
 
-  TransactionModel({
-    required this.id,
-    required this.bookId,
-    this.targetBookId,
-    required this.title,
-    required this.amount,
-    required this.type,
-    required this.categoryId,
-    required this.date,
-    this.note,
-    this.isSynced = false,
-    this.isDeleted = false,
-    this.deletedAt,
-    required this.createdAt,
-    required this.updatedAt,
-  });
+  bool get isIncome => type == TransactionType.income;
+  bool get isExpense => type == TransactionType.expense;
+  bool get isTransfer => type == TransactionType.transfer;
+  DateTime get transactionDate => date;
+  String get categoryName => title;
+
+  // copyWith, toJson, fromJson
 }
 ```
 
 ---
 
-## 7. Dependensi Paket Flutter (`pubspec.yaml`)
+## 7. Dependensi Paket (`pubspec.yaml`)
 
 ```yaml
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
 
-  # Routing & Deep Linking
-  go_router: ^14.0.0
-  app_links: ^6.1.1
+  # Routing
+  go_router: ^17.2.3
 
   # State Management
-  flutter_bloc: ^8.1.5
-  equatable: ^2.0.5
+  flutter_bloc: ^9.1.1
+  equatable: ^2.1.0
 
-  # Google Auth & Google Drive API
-  google_sign_in: ^6.2.1
-  googleapis: ^13.2.0
-  extension_google_sign_in_as_googleapis_auth: ^2.0.12
-  http: ^1.2.1
+  # Typography & Charts
+  google_fonts: ^8.1.0
+  fl_chart: ^1.2.0
 
-  # Local Storage, File Management & Security
-  path_provider: ^2.1.3
-  shared_preferences: ^2.2.3
-  flutter_secure_storage: ^9.2.2
-  local_auth: ^2.2.0
+  # Formatting & Localization
+  intl: ^0.20.2
 
-  # Export & Sharing (PDF, Excel, WhatsApp/Sosmed Share)
-  pdf: ^3.10.8
-  printing: ^5.13.0
-  excel: ^4.0.3
-  share_plus: ^9.0.0
+  # File Management & Storage
+  path_provider: ^2.1.5
+  shared_preferences: ^2.5.5
+  file_picker: ^9.0.1
+  share_plus: ^12.0.2
 
-  # UI, Icons, Typography & Charts
-  google_fonts: ^6.2.1
-  flutter_svg: ^2.0.10+1
-  fl_chart: ^0.68.0
-  intl: ^0.19.0
-  lucide_icons: ^0.250.0
+  # Security & Biometrics
+  flutter_secure_storage: ^10.3.4
+  local_auth: ^3.0.1
 
-  # Utilities
-  uuid: ^4.4.0
+  # Reporting & Export
+  pdf: ^3.12.0
+  printing: ^5.14.3
+  excel: ^4.0.6
+
+  # Google Sign-In & Drive Sync
+  google_sign_in: 6.2.2
+  googleapis: ^17.0.0
+  extension_google_sign_in_as_googleapis_auth: 2.0.12
+  http: ^1.6.0
+
+  # Utilities & Icons
+  uuid: ^4.6.0
+  flutter_svg: ^2.3.0
+  cupertino_icons: ^1.0.8
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^4.0.0
+  flutter_lints: ^5.0.0
 ```
 
 ---
 
-## 8. Roadmap Implementasi
+## 8. Panduan Verifikasi & Testing
 
-1. **Fase 1: Setup Theme (Light & Dark) & Offline-First Auth**
-   * Konfigurasi `AppTheme` (Light/Dark tokens) & `ThemeCubit`.
-   * Implementasi Screen 1 (Splash — cek PIN/biometrik lokal).
-   * Implementasi Screen 2 (Welcome Screen — first-time setup, tanpa Google).
-   * Setup `BiometricService` (PIN + Fingerprint/Face ID via `local_auth`).
-2. **Fase 2: Local Storage (`data.cashbook`)**
-   * Buat `LocalStorageService` untuk menyimpan & membaca file `data.cashbook` lokal.
-   * Tidak ada cloud sync wajib — data tersimpan 100% di perangkat.
-3. **Fase 3: Layar Dashboard & Input Transaksi**
-   * Screen 3 (Dashboard & Saldo Card auto-calculate).
-   * Screen 4 (Tambah Pemasukan) & Screen 5 (Tambah Pengeluaran).
-4. **Fase 4: Riwayat, Laporan Grafik & Kategori**
-   * Screen 6 (Daftar Transaksi grouped by date) & Screen 7 (Detail Transaksi).
-   * Screen 8 (Laporan Bar Chart `fl_chart`).
-   * Screen 9 (Kategori Pemasukan & Pengeluaran).
-5. **Fase 5: Akun, Backup & Keamanan**
-   * Screen 10 (Pengaturan Akun, Switcher Tema Light/Dark, Keamanan PIN/Biometrik).
-   * Fitur **Backup & Restore** via Android SAF (file picker native — tanpa OAuth):
-     * Backup: Simpan `data.cashbook` ke Drive/SD via `share_plus`.
-     * Restore: Buka file backup via `file_picker`, restore data lokal.
+Untuk memvalidasi keselarasan implementasi dengan spesifikasi ini:
+1. **Verifikasi Sintaks & Linter**:
+   ```bash
+   flutter analyze
+   ```
+2. **Verifikasi Unit Test**:
+   ```bash
+   flutter test
+   ```
+3. **Uji Coba Alur Utama**:
+   * Buka aplikasi pertama kali: pastikan Splash mengarahkan ke `/login`, tombol "Mulai" membuka `/create-initial-book`, dan setelah membuat buku langsung masuk `/home`.
+   * Catat pemasukan dan pengeluaran: pastikan buku tidak perlu dipilih, tombol Simpan ada di AppBar, dan nominal terformat.
+   * Cek Riwayat Transaksi: pastikan grouped by date, search berfungsi, dan quick add button bisa ditekan.
+   * Cek Laporan: ganti tab periode (Bulan Ini, Bulan Lalu, Custom), amati grafik fl_chart, dan uji ekspor PDF/Excel.
+   * Uji Tong Sampah: hapus transaksi dari detail, pastikan masuk ke `/trash`, pulihkan (restore), lalu uji hapus permanen.
+   * Uji Keamanan: aktifkan kunci aplikasi di Akun, minimize aplikasi/tutup, buka kembali: pastikan `LockScreen` meminta sidik jari / PIN Android.
+   * Uji Backup & Restore: lakukan backup via share sheet, lalu restore berkas backup via file picker.
