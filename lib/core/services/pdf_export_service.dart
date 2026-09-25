@@ -142,7 +142,7 @@ class PdfExportService {
           pw.SizedBox(height: 8),
 
           pw.TableHelper.fromTextArray(
-            headers: ['Tanggal', 'Keterangan', 'Kategori', 'Tipe', 'Nominal'],
+            headers: ['Tanggal', 'Keterangan', 'Deskripsi', 'Tipe', 'Nominal'],
             data: transactions.map((t) {
               final isIncome = t.type == TransactionType.income;
               return [

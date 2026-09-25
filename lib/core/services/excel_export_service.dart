@@ -38,7 +38,7 @@ class ExcelExportService {
       TextCellValue('No'),
       TextCellValue('Tanggal'),
       TextCellValue('Tipe'),
-      TextCellValue('Kategori'),
+      TextCellValue('Deskripsi'),
       TextCellValue('Keterangan'),
       TextCellValue('Nominal (Rp)'),
       TextCellValue('Catatan'),

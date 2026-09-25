@@ -311,7 +311,7 @@ class _AddIncomeScreenState extends State<AddIncomeScreen> {
                 categories: _categories,
                 isDark: isDark,
                 accentColor: AppColors.incomeGreen,
-                hintText: 'Pilih atau ketik kategori pemasukan...',
+                hintText: loc.tr('choose_income_category'),
               ),
 
               const SizedBox(height: 24),

@@ -18,7 +18,7 @@ class CategorySuggestField extends StatefulWidget {
     this.onCategorySelected,
     required this.isDark,
     required this.accentColor,
-    this.hintText = 'Pilih atau ketik kategori...',
+    this.hintText = 'Pilih atau ketik deskripsi...',
   });
 
   @override
@@ -154,7 +154,7 @@ class _CategorySuggestFieldState extends State<CategorySuggestField> {
           decoration: InputDecoration(
             hintText: widget.hintText,
             prefixIcon: Icon(
-              Icons.category_outlined,
+              Icons.description_outlined,
               size: 20,
               color: isDark ? AppColors.gray400 : AppColors.gray600,
             ),
@@ -252,7 +252,7 @@ class _CategorySuggestFieldState extends State<CategorySuggestField> {
                                       ),
                                     ),
                                     Text(
-                                      'Simpan sebagai kategori baru',
+                                      loc.tr('save_as_new_category'),
                                       style: TextStyle(
                                         fontSize: 11,
                                         color: widget.accentColor,

@@ -311,7 +311,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                 categories: _categories,
                 isDark: isDark,
                 accentColor: AppColors.expenseRed,
-                hintText: 'Pilih atau ketik kategori pengeluaran...',
+                hintText: loc.tr('choose_expense_category'),
               ),
 
               const SizedBox(height: 24),

@@ -48,7 +48,7 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(
-                    Icons.category_outlined,
+                    Icons.description_outlined,
                     size: 64,
                     color: isDark ? AppColors.gray600 : AppColors.gray400,
                   ),

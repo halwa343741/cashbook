@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/constants/colors.dart';
 import '../../../core/database/local_storage_service.dart';
 import '../../../core/localization/app_localizations.dart';
+import '../../../core/services/book_share_image_service.dart';
 import '../../../core/services/google_drive_service.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../core/utils/date_formatter.dart';
@@ -187,9 +188,18 @@ class _HomeScreenState extends State<HomeScreen> {
                     ],
                   ),
 
-                  // 2. BOOKS DROPDOWN SWITCHER (Immediately Below Logo)
+                  // 2. BOOKS DROPDOWN SWITCHER & SHARE BUTTON (Immediately Below Logo)
                   const SizedBox(height: 12),
-                  const BookDropdownSelector(),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Flexible(
+                        child: BookDropdownSelector(),
+                      ),
+                      const SizedBox(width: 8),
+                      _buildShareBookButton(context, isDark, loc),
+                    ],
+                  ),
                   const SizedBox(height: 16),
 
                   // 3. BALANCE CARD
@@ -619,7 +629,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    DateFormatter.format(tx.transactionDate, localeCode),
+                    DateFormatter.formatWithDay(tx.transactionDate, localeCode),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -641,6 +651,66 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildShareBookButton(BuildContext context, bool isDark, AppLocalizations loc) {
+    return BlocBuilder<BookCubit, BookState>(
+      builder: (context, state) {
+        final activeBook = (state is BookLoaded) ? state.activeBook : null;
+        if (activeBook == null) return const SizedBox.shrink();
+
+        return Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () {
+              BookShareImageService.instance.showShareModal(
+                context: context,
+                book: activeBook,
+                storage: widget.storage,
+              );
+            },
+            borderRadius: BorderRadius.circular(20),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.darkSurface : Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: isDark ? AppColors.gray700 : AppColors.gray200,
+                  width: 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.04),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.share_outlined,
+                    size: 16,
+                    color: AppColors.primary500,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    loc.tr('share'),
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? Colors.white : AppColors.gray900,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

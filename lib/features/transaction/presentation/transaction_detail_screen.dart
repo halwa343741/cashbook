@@ -172,7 +172,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                 children: [
                   _buildDetailRow(
                     context: context,
-                    icon: Icons.category_outlined,
+                    icon: Icons.description_outlined,
                     label: loc.tr('category'),
                     value: tx.categoryName,
                     isDark: isDark,

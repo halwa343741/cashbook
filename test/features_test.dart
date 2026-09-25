@@ -1,9 +1,16 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/date_symbol_data_local.dart';
+import 'package:cashbook/core/localization/app_localizations.dart';
+import 'package:cashbook/core/utils/date_formatter.dart';
 import 'package:cashbook/features/category/domain/models/category_model.dart';
 import 'package:cashbook/features/transaction/domain/models/transaction_model.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  setUpAll(() async {
+    await initializeDateFormatting();
+  });
 
   group('Transaction & Trash Logic Unit Tests', () {
     test('Transactions in a date group are sorted by ID descending', () {
@@ -116,6 +123,56 @@ void main() {
         icon: 'utensils',
       );
       expect(cat.name, 'Makan Siang Dan Malam');
+    });
+
+    test('DateFormatter.formatWithDay formats date with day name in specified locale', () {
+      final sampleDate = DateTime(2026, 9, 25); // Friday
+
+      final formattedId = DateFormatter.formatWithDay(sampleDate, 'id');
+      expect(formattedId.toLowerCase().contains('jumat'), isTrue);
+
+      final formattedEn = DateFormatter.formatWithDay(sampleDate, 'en');
+      expect(formattedEn.toLowerCase().contains('friday'), isTrue);
+
+      final formattedEs = DateFormatter.formatWithDay(sampleDate, 'es');
+      expect(formattedEs.toLowerCase().contains('viernes'), isTrue);
+
+      final formattedZh = DateFormatter.formatWithDay(sampleDate, 'zh');
+      expect(formattedZh.contains('星期五'), isTrue);
+    });
+
+    test('DateFormatter.formatGroupHeader includes day name for today and older dates', () {
+      final now = DateTime.now();
+      final headerToday = DateFormatter.formatGroupHeader(now, 'id');
+      expect(headerToday.startsWith('Hari Ini,'), isTrue);
+
+      final pastDate = DateTime(2026, 1, 5); // Monday
+      final headerPastId = DateFormatter.formatGroupHeader(pastDate, 'id');
+      expect(headerPastId.toLowerCase().contains('senin'), isTrue);
+
+      final headerPastEn = DateFormatter.formatGroupHeader(pastDate, 'en');
+      expect(headerPastEn.toLowerCase().contains('monday'), isTrue);
+    });
+
+    test('Localization verifies category renamed to description across locales', () {
+      final locId = AppLocalizations(const Locale('id'));
+      expect(locId.tr('category'), 'Deskripsi');
+      expect(locId.tr('choose_category'), 'Pilih Deskripsi');
+      expect(locId.tr('manage_categories'), 'Kelola Deskripsi');
+
+      final locEn = AppLocalizations(const Locale('en'));
+      expect(locEn.tr('category'), 'Description');
+      expect(locEn.tr('choose_category'), 'Choose Description');
+      expect(locEn.tr('manage_categories'), 'Manage Descriptions');
+
+      final locEs = AppLocalizations(const Locale('es'));
+      expect(locEs.tr('category'), 'Descripción');
+
+      final locZh = AppLocalizations(const Locale('zh'));
+      expect(locZh.tr('category'), '描述');
+
+      final locAr = AppLocalizations(const Locale('ar'));
+      expect(locAr.tr('category'), 'الوصف');
     });
   });
 }

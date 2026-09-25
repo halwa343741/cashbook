@@ -14,6 +14,15 @@ class DateFormatter {
     return DateFormat('dd MMM yyyy', loc).format(date);
   }
 
+  static String formatWithDay(DateTime date, [String localeCode = 'id']) {
+    final loc = _resolveLocale(localeCode);
+    final str = DateFormat('EEEE, dd MMM yyyy', loc).format(date);
+    if (str.isNotEmpty) {
+      return str[0].toUpperCase() + str.substring(1);
+    }
+    return str;
+  }
+
   static String formatIndonesian(DateTime date) => format(date, 'id');
 
   static String formatWithTime(DateTime date, [String localeCode = 'id']) {
@@ -40,7 +49,7 @@ class DateFormatter {
     final today = DateTime(now.year, now.month, now.day);
     final target = DateTime(date.year, date.month, date.day);
 
-    final formatted = format(date, localeCode);
+    final formatted = formatWithDay(date, localeCode);
 
     if (target == today) {
       if (localeCode == 'en') return 'Today, $formatted';
